@@ -9,10 +9,7 @@ import { Holder, Pixel, GameState } from '@/types/game'
 export default function Home() {
   const GRID_WIDTH = 50
   const GRID_HEIGHT = 50
-  // Tunables for fairness and round duration
-  const FIGHTS_PER_TICK = 1500 // meget hurtigere kampe
-  const TOKEN_INFLUENCE = 0.15 // endnu mindre vægt på balance
-  const SUPPORT_INFLUENCE = 0.35 // mere vægt på lokal støtte
+  // Client is view-only; all gameplay comes from server SSE
 
   const [gameState, setGameState] = useState<GameState>({
     totalPixels: 2500,
@@ -42,14 +39,12 @@ export default function Home() {
   const [roundTimer, setRoundTimer] = useState('00:00')
   const [showLoadingPopup, setShowLoadingPopup] = useState(true)
   const timerIntervalRef = useRef<NodeJS.Timeout | null>(null)
-  const battleIntervalRef = useRef<NodeJS.Timeout | null>(null)
   const sseRef = useRef<EventSource | null>(null)
-  const neighborsRef = useRef<number[][]>([])
   const countdownRunningRef = useRef<boolean>(false)
   const snapshotHoldersRef = useRef<Holder[] | null>(null)
   const DEFAULT_MINT = process.env.NEXT_PUBLIC_MINT_ADDRESS || 'DfPFV3Lt1x3818H9sHfM2aiuV5zqWM7oztQ8sSbapump'
 
-  // Initialize pixels array and precompute neighbors
+  // Initialize pixels array (layout only). Server will stream real owners/colors.
   useEffect(() => {
     const initialPixels: Pixel[] = []
     for (let i = 0; i < gameState.totalPixels; i++) {
@@ -61,32 +56,9 @@ export default function Home() {
       })
     }
     setGameState(prev => ({ ...prev, pixels: initialPixels }))
-
-    // precompute 4-neighbors (up/down/left/right)
-    const neighbors: number[][] = Array.from({ length: gameState.totalPixels }, () => [])
-    for (let idx = 0; idx < gameState.totalPixels; idx++) {
-      const x = idx % GRID_WIDTH
-      const y = Math.floor(idx / GRID_WIDTH)
-      if (x > 0) neighbors[idx].push(idx - 1)
-      if (x < GRID_WIDTH - 1) neighbors[idx].push(idx + 1)
-      if (y > 0) neighbors[idx].push(idx - GRID_WIDTH)
-      if (y < GRID_HEIGHT - 1) neighbors[idx].push(idx + GRID_WIDTH)
-    }
-    neighborsRef.current = neighbors
   }, [gameState.totalPixels])
 
-  const generatePlayerColor = (seed: string): string => {
-    let hash = 0
-    for (let i = 0; i < seed.length; i++) {
-      hash = seed.charCodeAt(i) + ((hash << 5) - hash)
-    }
-    
-    const hue = Math.abs(hash) % 360
-    const saturation = 70 + (Math.abs(hash) % 30)
-    const lightness = 45 + (Math.abs(hash) % 20)
-    
-    return `hsl(${hue}, ${saturation}%, ${lightness}%)`
-  }
+  // No local color generation needed here; server provides colors
 
   // Fælles server-event handler (phase/snapshot/winner)
   const handleServerEvent = useCallback((data: any) => {
@@ -280,244 +252,12 @@ export default function Home() {
 
 
   // Test mode: 100 players with roughly equal pixels
-  const generateEqualMockHolders = (): Holder[] => {
-    const players = 100
-    const equalBalance = 1
-    const equalPercentage = 100 / players
-    const basePixels = Math.floor(gameState.totalPixels / players)
-    let remainder = gameState.totalPixels - basePixels * players
-
-    const holders: Holder[] = []
-    for (let i = 0; i < players; i++) {
-      const pixels = basePixels + (remainder > 0 ? 1 : 0)
-      if (remainder > 0) remainder--
-
-      holders.push({
-        address: generateMockAddress(),
-        balance: equalBalance,
-        percentage: equalPercentage,
-        pixels,
-        color: '#ffffff' // temporary, palette will be assigned below
-      })
-    }
-    // assign distinct palette
-    const palette = generateDistinctPalette(holders.length)
-    for (let i = 0; i < holders.length; i++) holders[i].color = palette[i]
-    return holders
-  }
-
-  function generateDistinctPalette(count: number): string[] {
-    // Mirror server logic: enforce min RGB distance to avoid lookalikes
-    const palette: string[] = []
-    const hslToRgb = (h: number, s: number, l: number): [number, number, number] => {
-      s /= 100; l /= 100
-      const k = (n: number) => (n + h / 30) % 12
-      const a = s * Math.min(l, 1 - l)
-      const f = (n: number) => l - a * Math.max(-1, Math.min(k(n) - 3, Math.min(9 - k(n), 1)))
-      return [Math.round(255 * f(0)), Math.round(255 * f(8)), Math.round(255 * f(4))]
-    }
-    const dist = (r1: number, g1: number, b1: number, r2: number, g2: number, b2: number) => {
-      const dr = r1 - r2, dg = g1 - g2, db = b1 - b2
-      return Math.sqrt(0.3 * dr * dr + 0.59 * dg * dg + 0.11 * db * db)
-    }
-    const minDistance = 80
-    const baseSats = [76, 84]
-    const baseLights = [48, 60, 40]
-    for (let i = 0; i < count; i++) {
-      let hue = Math.round((i * 360) / count)
-      let sat = baseSats[i % baseSats.length]
-      let light = baseLights[i % baseLights.length]
-      let attempts = 0
-      while (attempts < 12) {
-        const [r, g, b] = hslToRgb(hue, sat, light)
-        let ok = true
-        for (let j = 0; j < palette.length; j++) {
-          const match = /hsl\((\d+), (\d+)%?, (\d+)%?\)/.exec(palette[j])
-          if (!match) continue
-          const [hr, sr, lr] = [parseInt(match[1]), parseInt(match[2]), parseInt(match[3])]
-          const [rr, gr, br] = hslToRgb(hr, sr, lr)
-          if (dist(r, g, b, rr, gr, br) < minDistance) { ok = false; break }
-        }
-        if (ok) { palette.push(`hsl(${hue}, ${sat}%, ${light}%)`); break }
-        hue = (hue + 13) % 360
-        attempts++
-      }
-      if (attempts >= 12) palette.push(`hsl(${hue}, ${sat}%, ${light}%)`)
-    }
-    return palette
-  }
-
-  const generateMockAddress = (): string => {
-    const chars = 'ABCDEFGHJKMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz123456789'
-    let address = ''
-    for (let i = 0; i < 44; i++) {
-      address += chars.charAt(Math.floor(Math.random() * chars.length))
-    }
-    return address
-  }
-
-  const distributePixelsToHolders = useCallback(() => {
-    setGameState(prev => {
-      const newPixels = [...prev.pixels]
-
-      // Reset all pixels
-      for (let i = 0; i < newPixels.length; i++) {
-        newPixels[i].owner = null
-        newPixels[i].color = '#333'
-      }
-
-      // Build and shuffle a list of all pixel indices
-      const indices: number[] = Array.from({ length: prev.totalPixels }, (_, i) => i)
-      for (let i = indices.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1))
-        const tmp = indices[i]
-        indices[i] = indices[j]
-        indices[j] = tmp
-      }
-
-      // Ensure total desired pixels match grid total
-      const desiredCounts = prev.holders.map(h => Math.max(0, Math.floor(h.pixels)))
-      let sum = desiredCounts.reduce((a, b) => a + b, 0)
-      let remaining = prev.totalPixels - sum
-      // fordel resterende pixels én ad gangen til de første spillere
-      let k = 0
-      while (remaining > 0 && desiredCounts.length > 0) {
-        desiredCounts[k % desiredCounts.length]++
-        k++
-        remaining--
-      }
-
-      // Assign via the shuffled index array
-      let cursor = 0
-      for (let holderIndex = 0; holderIndex < prev.holders.length; holderIndex++) {
-        const count = Math.min(desiredCounts[holderIndex] || 0, indices.length - cursor)
-        const color = prev.holders[holderIndex].color
-        for (let c = 0; c < count; c++) {
-          const pixIdx = indices[cursor++]
-          newPixels[pixIdx].owner = holderIndex
-          newPixels[pixIdx].color = color
-        }
-        if (cursor >= indices.length) break
-      }
-
-      return { ...prev, pixels: newPixels }
-    })
-  }, [])
-
-  const startTimer = useCallback(() => {
-    timerIntervalRef.current = setInterval(() => {
-      setGameState(prev => {
-        if (prev.gameRunning && prev.roundStartTime) {
-          const elapsed = Date.now() - prev.roundStartTime
-          const minutes = Math.floor(elapsed / 60000)
-          const seconds = Math.floor((elapsed % 60000) / 1000)
-          
-          setRoundTimer(`${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`)
-        }
-        return prev
-      })
-    }, 1000)
-  }, [])
-
-  const performBattle = useCallback(() => {
-    setGameState(prev => {
-      if (!prev.gameRunning) return prev
-
-      const newPixels = [...prev.pixels]
-
-      // perform many local neighbor fights per tick
-      for (let r = 0; r < FIGHTS_PER_TICK; r++) {
-        const aIndex = Math.floor(Math.random() * newPixels.length)
-        const aOwner = newPixels[aIndex].owner
-        if (aOwner === null) continue
-
-        const neighbors = neighborsRef.current[aIndex]
-        if (!neighbors || neighbors.length === 0) continue
-        const bIndex = neighbors[Math.floor(Math.random() * neighbors.length)]
-        const bOwner = newPixels[bIndex].owner
-        if (bOwner === null || bOwner === aOwner) continue
-
-        // 50/50 kamp – helt fair per pixel
-        const holderA = prev.holders[aOwner]
-        const holderB = prev.holders[bOwner]
-        const probA = 0.5
-
-        if (Math.random() < probA) {
-          newPixels[bIndex].owner = aOwner
-          newPixels[bIndex].color = holderA.color
-        } else {
-          newPixels[aIndex].owner = bOwner
-          newPixels[aIndex].color = holderB.color
-        }
-      }
-
-      // Check for a round winner after the batch
-      const pixelCounts: { [key: number]: number } = {}
-      for (let i = 0; i < newPixels.length; i++) {
-        const o = newPixels[i].owner
-        if (o !== null) pixelCounts[o] = (pixelCounts[o] || 0) + 1
-      }
-      const owners = Object.keys(pixelCounts)
-      // Vind KUN når der kun er én ejer tilbage (100% af gridet)
-      if (owners.length === 1) {
-        const onlyOwnerIndex = parseInt(owners[0])
-          const winnerHolder = prev.holders[onlyOwnerIndex]
-        const roundFees = prev.feesPool // winner gets the whole pool (30% allerede i pool)
-        // Stop loops when someone wins
-        setTimeout(() => {
-          stopAllLoops()
-          setGameState(current => ({ ...current, gameRunning: false }))
-
-          // Prevent overlapping countdowns
-          if (countdownRunningRef.current) return
-          countdownRunningRef.current = true
-
-          // Show winner popup
-          setWinnerInfo({ address: winnerHolder.address, color: winnerHolder.color, startingPixels: Math.max(0, Math.floor(winnerHolder.pixels || 0)) })
-          setWinnerClosing(false)
-          setShowWinnerPopup(true)
-          setNextRoundCountdown(10)
-
-          // Fixed countdown of full 10 seconds
-          let ticks = 10
-          const startedAt = Date.now()
-          const countdownInterval = setInterval(() => {
-            const elapsed = Math.floor((Date.now() - startedAt) / 1000)
-            const remaining = Math.max(0, 10 - elapsed)
-            setNextRoundCountdown(remaining)
-            if (remaining <= 0) {
-              clearInterval(countdownInterval)
-              countdownRunningRef.current = false
-              setWinnerClosing(true)
-              setTimeout(() => {
-                setShowWinnerPopup(false)
-                startGame()
-              }, 240)
-            }
-          }, 250) // update 4x per sekund for stabil nedtælling
-        }, 50)
-      }
-
-      return { ...prev, pixels: newPixels }
-    })
-  }, [distributePixelsToHolders])
-
-  const startBattleLoop = useCallback(() => {
-    if (battleIntervalRef.current) clearInterval(battleIntervalRef.current)
-    battleIntervalRef.current = setInterval(() => {
-      performBattle()
-    }, 10) // ~100 FPS (kræver mere CPU)
-  }, [performBattle])
+  // Remove local mocking / palette utilities to keep client authoritative
 
   const stopAllLoops = useCallback(() => {
     if (timerIntervalRef.current) clearInterval(timerIntervalRef.current)
-    if (battleIntervalRef.current) clearInterval(battleIntervalRef.current)
     if (sseRef.current) { try { sseRef.current.close() } catch {} sseRef.current = null }
   }, [])
-
-  const startGame = async () => {
-    try { await fetch('/api/round/start', { method: 'POST' }) } catch {}
-  }
 
 
 
