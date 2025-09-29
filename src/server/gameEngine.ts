@@ -35,7 +35,7 @@ interface EngineState {
   onWinner?: (winnerIndex: number) => void
   startMs: number
   roundId: number
-  phase: 'idle' | 'running' | 'winner'
+  phase: 'idle' | 'claim' | 'snapshot' | 'starting' | 'running' | 'winner'
   nextRoundAt: number
   winnerIndex?: number | null
   nextPhaseAt: number
