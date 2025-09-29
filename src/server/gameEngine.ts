@@ -225,11 +225,11 @@ function stop(): void {
 
 function broadcast(obj: any): void {
   const data = encoder.encode(`data: ${JSON.stringify(obj)}\n\n`)
-  for (const [, client] of clients) {
+  clients.forEach((client) => {
     try {
       client.enqueue(data)
     } catch {}
-  }
+  })
 }
 
 export function addClient(enqueue: (chunk: Uint8Array) => void): () => void {
