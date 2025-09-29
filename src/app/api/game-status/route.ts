@@ -1,13 +1,12 @@
 import { NextResponse } from 'next/server'
-import { getGameServer } from '@/server/gameServer'
+import { getCurrentState } from '@/server/gameEngine'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
 export async function GET() {
   try {
-    const gameServer = getGameServer()
-    const snapshot = gameServer.getSnapshot()
+    const snapshot = getCurrentState()
     
     return NextResponse.json({
       success: true,
@@ -25,3 +24,4 @@ export async function GET() {
     )
   }
 }
+
