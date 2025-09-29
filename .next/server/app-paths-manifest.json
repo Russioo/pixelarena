@@ -1,0 +1,6 @@
+{
+  "/api/round/ensure/route": "app/api/round/ensure/route.js",
+  "/api/round/state/route": "app/api/round/state/route.js",
+  "/page": "app/page.js",
+  "/api/stream/route": "app/api/stream/route.js"
+}
