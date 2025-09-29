@@ -6,6 +6,14 @@ export const dynamic = 'force-dynamic'
 
 export async function POST(req: Request) {
   try {
+    const ENGINE_URL = process.env.ENGINE_URL
+    if (ENGINE_URL) {
+      const url = ENGINE_URL.replace(/\/$/, '') + '/api/round/start'
+      const resp = await fetch(url, { method: 'POST', cache: 'no-store' })
+      if (!resp.ok) return NextResponse.json({ error: 'engine upstream error' }, { status: 502 })
+      const json = await resp.json()
+      return NextResponse.json(json)
+    }
     const s = getCurrentState()
     // Start kun hvis serveren er idle. Hvis vi er i claim/snapshot/starting/running/winner, gør ingenting.
     if (s.phase && s.phase !== 'idle') {

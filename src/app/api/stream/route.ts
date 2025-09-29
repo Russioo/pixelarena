@@ -17,6 +17,9 @@ export async function GET() {
         } else if (s.phase === 'winner' && typeof s.winnerIndex === 'number') {
           const initial = { type: 'winner', winnerIndex: s.winnerIndex, nextRoundAt: s.nextRoundAt, holders: s.holders }
           controller.enqueue(encoder.encode(`data: ${JSON.stringify(initial)}\n\n`))
+        } else if (s.phase === 'claim' || s.phase === 'snapshot' || s.phase === 'starting') {
+          const initial = { type: 'phase', phase: s.phase, endsAt: s.nextPhaseAt, feesPoolLamports: (s as any).feesPoolLamports, holders: s.phase === 'snapshot' ? s.holders : undefined } as any
+          controller.enqueue(encoder.encode(`data: ${JSON.stringify(initial)}\n\n`))
         }
       } catch {}
 
