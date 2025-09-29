@@ -23,7 +23,7 @@ export async function POST() {
     const keypair = Keypair.fromSecretKey(bs58.decode(secStr))
 
     // Helper: robust getBalance med fallback til JSON-RPC hvis web3 fetch fejler
-    async function robustGetBalance(account: PublicKey): Promise<number> {
+    const robustGetBalance = async (account: PublicKey): Promise<number> => {
       try {
         return await connection.getBalance(account, 'confirmed')
       } catch (err) {
