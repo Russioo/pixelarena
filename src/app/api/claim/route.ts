@@ -114,43 +114,25 @@ export async function POST() {
     const tx = VersionedTransaction.deserialize(buf)
     tx.sign([keypair])
 
-    // Send transaction PRÆCIS som Python: via JSON RPC (ikke web3.js abstraction)
+    // Send VersionedTransaction korrekt med sendRawTransaction
     console.log('[Claim] Sender transaction til Solana...')
-    const serializedTx = Buffer.from(tx.serialize()).toString('base64')
-    const sendPayload = {
-      jsonrpc: '2.0',
-      id: 1,
-      method: 'sendTransaction',
-      params: [
-        serializedTx,
-        {
-          encoding: 'base64',
-          preflightCommitment: 'confirmed'
-        }
-      ]
-    }
-    
-    const sendResponse = await axios.post(rpc, sendPayload, {
-      headers: { 'Content-Type': 'application/json' },
-      timeout: 30000
+    const signature = await connection.sendRawTransaction(tx.serialize(), {
+      skipPreflight: false,
+      preflightCommitment: 'confirmed',
+      maxRetries: 3
     })
-    
-    const sendResult = sendResponse.data
-    if (sendResult.error) {
-      throw new Error(`Transaction fejl: ${JSON.stringify(sendResult.error)}`)
-    }
-    
-    const signature = sendResult.result
-    if (!signature) {
-      throw new Error('Ingen transaction signature modtaget')
-    }
     
     console.log('[Claim] SUCCESS! Transaction sendt!')
     console.log('[Claim] Signature:', signature)
     console.log('[Claim] Solscan:', `https://solscan.io/tx/${signature}`)
     
-    // Vent præcis 15 sekunder som Python scriptet
-    console.log('[Claim] Venter på confirmation (15 sekunder)...')
+    // Vent på confirmation
+    console.log('[Claim] Venter på confirmation...')
+    await connection.confirmTransaction(signature, 'confirmed')
+    console.log('[Claim] ✅ Transaction confirmed!')
+    
+    // Vent præcis 15 sekunder som Python scriptet for balance opdatering
+    console.log('[Claim] Venter 15 sekunder på balance opdatering...')
     await new Promise(r => setTimeout(r, 15000))
     
     // Tjek balance efter claim
