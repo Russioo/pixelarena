@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server'
-import { startServerFlow, isRunning, getCurrentState } from '@/server/gameEngine'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -7,24 +6,36 @@ export const dynamic = 'force-dynamic'
 export async function POST(req: Request) {
   try {
     const ENGINE_URL = process.env.ENGINE_URL
-    if (ENGINE_URL) {
-      const url = ENGINE_URL.replace(/\/$/, '') + '/api/round/start'
-      const resp = await fetch(url, { method: 'POST', cache: 'no-store' })
-      if (!resp.ok) return NextResponse.json({ error: 'engine upstream error' }, { status: 502 })
-      const json = await resp.json()
-      return NextResponse.json(json)
+    
+    // ENGINE_URL er PÅKRÆVET - ingen fallback!
+    if (!ENGINE_URL) {
+      return NextResponse.json({ 
+        error: 'ENGINE_URL mangler',
+        message: 'Venter på Docker server... ENGINE_URL skal være sat i environment variables.',
+        status: 'waiting'
+      }, { status: 503 })
     }
-    const s = getCurrentState()
-    // Start kun hvis serveren er idle. Hvis vi er i claim/snapshot/starting/running/winner, gør ingenting.
-    if (s.phase && s.phase !== 'idle') {
-      return NextResponse.json({ ok: true, alreadyInProgress: true, phase: s.phase })
+
+    // Start round på Docker serveren
+    const url = ENGINE_URL.replace(/\/$/, '') + '/api/round/start'
+    const resp = await fetch(url, { method: 'POST', cache: 'no-store' })
+    
+    if (!resp.ok) {
+      return NextResponse.json({ 
+        error: 'Engine unavailable',
+        message: 'Docker serveren svarede ikke korrekt.',
+        engineUrl: ENGINE_URL
+      }, { status: 502 })
     }
-    if (isRunning()) return NextResponse.json({ ok: true, alreadyRunning: true })
-    // Start fuldt serverstyret fase-flow (claim -> snapshot -> starting -> running)
-    startServerFlow()
-    return NextResponse.json({ ok: true, started: true, serverFlow: true })
+    
+    const json = await resp.json()
+    return NextResponse.json(json)
   } catch (e: any) {
-    return NextResponse.json({ error: e?.message || 'failed to start round' }, { status: 500 })
+    return NextResponse.json({ 
+      error: 'Connection failed',
+      message: 'Kunne ikke forbinde til Docker serveren.',
+      details: e?.message || 'Unknown error'
+    }, { status: 500 })
   }
 }
 

@@ -1,54 +1,41 @@
 import { NextResponse } from 'next/server'
-import { isRunning, setOnWinner, startServerFlow, getCurrentState } from '@/server/gameEngine'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
-let initialized = false
-
-async function autostartIfNeeded() {
-  if (!initialized) {
-    initialized = true
-    // Auto-start ny runde når den forrige slutter
-    setOnWinner(() => {
-      try {
-        // Start fuldt serverstyret flow igen
-        startServerFlow()
-      } catch {}
-    })
-  }
-  const s = getCurrentState()
-  // Start kun hvis vi er i idle (dvs. intet flow kører)
-  if (!isRunning() && s.phase === 'idle') startServerFlow()
-}
-
-function defaultHolders() {
-  // Minimal mock hvis ingen rigtige holders gives: 100 spillere med 25 pixels hver
-  const total = 100
-  const base = 25
-  return Array.from({ length: total }, (_, i) => ({
-    address: `HOLDER_${i.toString().padStart(3,'0')}`,
-    balance: 1,
-    percentage: 1,
-    pixels: base,
-    color: `hsl(${Math.round((i * 360) / total)}, 80%, 50%)`
-  }))
-}
-
 export async function GET() {
   try {
     const ENGINE_URL = process.env.ENGINE_URL
-    if (ENGINE_URL) {
-      const url = ENGINE_URL.replace(/\/$/, '') + '/api/round/ensure'
-      const resp = await fetch(url, { cache: 'no-store' })
-      if (!resp.ok) return NextResponse.json({ error: 'engine upstream error' }, { status: 502 })
-      const json = await resp.json()
-      return NextResponse.json(json)
+    
+    // ENGINE_URL er PÅKRÆVET - ingen fallback!
+    if (!ENGINE_URL) {
+      return NextResponse.json({ 
+        error: 'ENGINE_URL mangler',
+        message: 'Venter på Docker server... ENGINE_URL skal være sat i environment variables.',
+        status: 'waiting'
+      }, { status: 503 })
     }
-    await autostartIfNeeded()
-    return NextResponse.json({ ok: true })
+
+    // Ensure round på Docker serveren
+    const url = ENGINE_URL.replace(/\/$/, '') + '/api/round/ensure'
+    const resp = await fetch(url, { cache: 'no-store' })
+    
+    if (!resp.ok) {
+      return NextResponse.json({ 
+        error: 'Engine unavailable',
+        message: 'Docker serveren svarede ikke korrekt.',
+        engineUrl: ENGINE_URL
+      }, { status: 502 })
+    }
+    
+    const json = await resp.json()
+    return NextResponse.json(json)
   } catch (e: any) {
-    return NextResponse.json({ error: e?.message || 'failed to ensure round' }, { status: 500 })
+    return NextResponse.json({ 
+      error: 'Connection failed',
+      message: 'Kunne ikke forbinde til Docker serveren.',
+      details: e?.message || 'Unknown error'
+    }, { status: 500 })
   }
 }
 
