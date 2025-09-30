@@ -326,7 +326,7 @@ export function startServerFlow(params?: { holders?: Holder[]; claimMs?: number;
       const response = await fetch(claimUrl, { method: 'POST' })
       
       if (response.ok) {
-        const data = await response.json()
+        const data = await response.json() as any
         console.log('[GameEngine] ✅ Claim successful:', {
           claimedSOL: data.claimedSOL || 0,
           payoutSOL: data.payoutSOL || 0,
