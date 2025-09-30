@@ -1,53 +1,53 @@
 # 🪙 Pixel Arena – VibeCoding Coin Pixel Battle
 
-En enkel pixel-battle, hvor de største holders af din Solana PumpFun coin kæmper om brættet – bygget med Next.js og TypeScript.
+A simple pixel battle game where the largest holders of your Solana PumpFun coin fight for board dominance – built with Next.js and TypeScript.
 
-### Hvordan fungerer det?
-- **Top holders** hentes (fx top 100) via Helius/RPC.
-- **Pixels fordeles** proportionalt efter holdings (alle får mindst 1 pixel).
-- **Kampe** kører løbende; nabo-pixels duellerer og skifter ejer ved sejr.
-- **Runder** slutter, når én holder dominerer brættet – vinderen annonceres.
-- **Centraliseret spil** – Alle brugere ser det samme via Docker engine + SSE stream
+### How does it work?
+- **Top holders** are fetched (e.g. top 100) via Helius/RPC.
+- **Pixels are distributed** proportionally based on holdings (everyone gets at least 1 pixel).
+- **Battles** run continuously; neighboring pixels duel and change owner on victory.
+- **Rounds** end when one holder dominates the board – the winner is announced.
+- **Centralized game** – All users see the same game via Docker engine + SSE stream
 
 ## 🚀 Quick Start
 
-### Lokal Udvikling (uden Docker)
-1. Installer dependencies:
+### Local Development (without Docker)
+1. Install dependencies:
    ```bash
    npm install
    ```
-2. Opret environment-fil:
+2. Create environment file:
    ```bash
    cp env.example .env.local
    ```
-   Tilføj i `.env.local`:
+   Add to `.env.local`:
    ```
-   HELIUS_API_KEY=din-api-key
+   HELIUS_API_KEY=your-api-key
    ```
-3. Start udviklingsserveren:
+3. Start development server:
    ```bash
    npm run dev
    ```
-4. Åbn: `http://localhost:3000`
+4. Open: `http://localhost:3000`
 
-### Lokal Test med Docker
+### Local Testing with Docker
 1. Start Docker engine:
    ```bash
    docker-compose up
    ```
-2. I en anden terminal, start Next.js:
+2. In another terminal, start Next.js:
    ```bash
    ENGINE_URL=http://localhost:8080 npm run dev
    ```
-3. Åbn flere browser tabs på `http://localhost:3000` - alle ser samme spil!
+3. Open multiple browser tabs at `http://localhost:3000` - everyone sees the same game!
 
 ## 🐳 Production Deployment (Docker + Vercel)
 
-For at alle brugere skal se det samme spil, skal du deploye med denne arkitektur:
+For all users to see the same game, you must deploy with this architecture:
 
 ```
 ┌─────────────┐
-│   Brugere   │ ←─── Se samme spil state
+│    Users    │ ←─── See same game state
 └──────┬──────┘
        │ HTTP/SSE
 ┌──────▼──────┐
@@ -56,49 +56,49 @@ For at alle brugere skal se det samme spil, skal du deploye med denne arkitektur
 └──────┬──────┘
        │ Proxy
 ┌──────▼──────┐
-│   Docker    │ ←─── Game Engine (centraliseret)
-│  Container  │      Kører på Render/Railway/VPS
+│   Docker    │ ←─── Game Engine (centralized)
+│  Container  │      Runs on Render/Railway/VPS
 └─────────────┘
 ```
 
 ### Step 1: Deploy Docker Engine
 
-Vælg en af disse services:
+Choose one of these services:
 
-**Option A: Render.com (Anbefalet)**
-1. Gå til [render.com](https://render.com)
-2. Opret ny "Web Service" fra dette repo
-3. Vælg "Docker" environment
-4. Deploy! Kopier din URL (f.eks. `https://din-app.onrender.com`)
+**Option A: Render.com (Recommended)**
+1. Go to [render.com](https://render.com)
+2. Create new "Web Service" from this repo
+3. Select "Docker" environment
+4. Deploy! Copy your URL (e.g. `https://your-app.onrender.com`)
 
 **Option B: Railway.app**
-1. Gå til [railway.app](https://railway.app)
-2. Deploy fra GitHub repo
-3. Railway detecterer automatisk Dockerfile
-4. Kopier genereret URL
+1. Go to [railway.app](https://railway.app)
+2. Deploy from GitHub repo
+3. Railway automatically detects Dockerfile
+4. Copy generated URL
 
-**Option C: Din egen server**
+**Option C: Your own server**
 ```bash
 docker-compose up -d
-# Husk at åbne port 8080 i firewall
+# Remember to open port 8080 in firewall
 ```
 
-### Step 2: Konfigurer Vercel
+### Step 2: Configure Vercel
 
-1. Gå til Vercel project → Settings → Environment Variables
-2. Tilføj:
+1. Go to Vercel project → Settings → Environment Variables
+2. Add:
    - **Key**: `ENGINE_URL`
-   - **Value**: Din Docker URL fra Step 1
+   - **Value**: Your Docker URL from Step 1
    - **Environments**: Production, Preview, Development
 3. Redeploy: `vercel --prod`
 
 ### Step 3: Test
 
-Åbn din Vercel URL i flere browsere/tabs - alle skulle se det samme spil! 🎉
+Open your Vercel URL in multiple browsers/tabs - everyone should see the same game! 🎉
 
-📖 **Detaljeret guide**: Se [DEPLOYMENT.md](./DEPLOYMENT.md)
+📖 **Detailed guide**: See [DEPLOYMENT.md](./DEPLOYMENT.md)
 
-## 📁 Struktur
+## 📁 Structure
 
 ```
 .
@@ -106,60 +106,60 @@ docker-compose up -d
 │   └── server.ts          # Docker game engine (Express + SSE)
 ├── src/
 │   ├── app/
-│   │   ├── api/           # Next.js API routes (proxy til Docker)
+│   │   ├── api/           # Next.js API routes (proxy to Docker)
 │   │   └── page.tsx       # Frontend
-│   ├── components/        # UI komponenter
+│   ├── components/        # UI components
 │   └── server/
-│       └── gameEngine.ts  # Delt game logic
+│       └── gameEngine.ts  # Shared game logic
 ├── Dockerfile             # Docker container setup
-├── docker-compose.yml     # Lokal Docker test
-└── DEPLOYMENT.md          # Fuld deployment guide
+├── docker-compose.yml     # Local Docker test
+└── DEPLOYMENT.md          # Full deployment guide
 ```
 
 ## 🛠 Scripts
 
-- `npm run dev` – udvikling (lokal engine)
-- `npm run build` – build til produktion
-- `npm run start` – kør production build
-- `npm run engine` – kør Docker engine lokalt
+- `npm run dev` – development (local engine)
+- `npm run build` – build for production
+- `npm run start` – run production build
+- `npm run engine` – run Docker engine locally
 - `docker-compose up` – start Docker container
 
 ## 🔧 Configuration
 
-Environment variables (`.env.local` eller Vercel):
+Environment variables (`.env.local` or Vercel):
 
 ```bash
-# Game Engine URL (til Vercel deployment)
-ENGINE_URL=https://din-docker-server.com
+# Game Engine URL (for Vercel deployment)
+ENGINE_URL=https://your-docker-server.com
 
 # Solana
-HELIUS_API_KEY=din-api-key
+HELIUS_API_KEY=your-api-key
 NEXT_PUBLIC_MINT_ADDRESS=DfPFV3Lt3818H9sHfM2aiuV5zqWM7oztQ8sSbapump
 
 # Docker Engine (optional tuning)
-FIGHTS_PER_TICK=1200      # Antal kampe per tick
-TICK_INTERVAL_MS=15       # MS mellem ticks
+FIGHTS_PER_TICK=1200      # Number of fights per tick
+TICK_INTERVAL_MS=15       # MS between ticks
 ```
 
 ## 🔍 Troubleshooting
 
 **"Failed to connect to game engine"**
-- Tjek at Docker container kører
-- Verificer ENGINE_URL er korrekt i Vercel
-- Test: `curl https://din-engine-url.com/api/round/state`
+- Check that Docker container is running
+- Verify ENGINE_URL is correct in Vercel
+- Test: `curl https://your-engine-url.com/api/round/state`
 
-**Stream opdaterer ikke**
-- Åbn browser console for fejl
-- Tjek Docker logs: `docker-compose logs -f`
+**Stream not updating**
+- Open browser console for errors
+- Check Docker logs: `docker-compose logs -f`
 
 **Performance issues**
-- Reducer `FIGHTS_PER_TICK` eller øg `TICK_INTERVAL_MS`
-- Upgrade til paid tier på hosting platform
+- Reduce `FIGHTS_PER_TICK` or increase `TICK_INTERVAL_MS`
+- Upgrade to paid tier on hosting platform
 
 ## 📱 Links
 
 - X (Twitter): [@pixelarenapump](https://x.com/pixelarenapump)
 
-## 📄 Licens
+## 📄 License
 
-MIT – brug frit.
+MIT – use freely.

@@ -1,72 +1,72 @@
 # Deployment Guide - Docker + Vercel
 
-Dette projekt kører med en delt game engine i Docker, der streamer til alle brugere via Vercel frontend.
+This project runs with a shared game engine in Docker that streams to all users via Vercel frontend.
 
-## Arkitektur
+## Architecture
 
-1. **Docker Container** - Kører game engine serveren (Express på port 8080)
-2. **Vercel** - Kører Next.js frontend der proxy'er til Docker serveren
-3. **SSE Stream** - Alle brugere modtager samme game state via Server-Sent Events
+1. **Docker Container** - Runs the game engine server (Express on port 8080)
+2. **Vercel** - Runs Next.js frontend that proxies to Docker server
+3. **SSE Stream** - All users receive the same game state via Server-Sent Events
 
 ## Step 1: Deploy Docker Container
 
-Du skal deploye Docker containeren til en cloud service. Her er nogle anbefalinger:
+You need to deploy the Docker container to a cloud service. Here are some recommendations:
 
-### Option A: Render.com (Anbefalet - Gratis tier)
+### Option A: Render.com (Recommended - Free tier)
 
-1. Gå til [render.com](https://render.com) og log ind
-2. Klik "New +" → "Web Service"
-3. Connect dit GitHub repository
-4. Konfiguration:
+1. Go to [render.com](https://render.com) and log in
+2. Click "New +" → "Web Service"
+3. Connect your GitHub repository
+4. Configuration:
    - **Name**: `vibecodingcoin-engine`
    - **Environment**: `Docker`
-   - **Instance Type**: `Free` (eller `Starter` for bedre performance)
+   - **Instance Type**: `Free` (or `Starter` for better performance)
    - **Health Check Path**: `/api/round/state`
-5. Klik "Create Web Service"
-6. Kopier URL'en (f.eks. `https://vibecodingcoin-engine.onrender.com`)
+5. Click "Create Web Service"
+6. Copy the URL (e.g. `https://vibecodingcoin-engine.onrender.com`)
 
 ### Option B: Railway.app
 
-1. Gå til [railway.app](https://railway.app) og log ind
-2. Klik "New Project" → "Deploy from GitHub repo"
-3. Vælg dit repository
-4. Railway detecterer automatisk Dockerfile
-5. Tilføj environment variables hvis nødvendigt:
+1. Go to [railway.app](https://railway.app) and log in
+2. Click "New Project" → "Deploy from GitHub repo"
+3. Select your repository
+4. Railway automatically detects Dockerfile
+5. Add environment variables if needed:
    - `PORT=8080`
    - `FIGHTS_PER_TICK=1200`
    - `TICK_INTERVAL_MS=15`
-6. Deploy og kopier den genererede URL
+6. Deploy and copy the generated URL
 
 ### Option C: Fly.io
 
-1. Installer Fly CLI: `curl -L https://fly.io/install.sh | sh`
-2. Log ind: `fly auth login`
+1. Install Fly CLI: `curl -L https://fly.io/install.sh | sh`
+2. Log in: `fly auth login`
 3. Launch app: `fly launch`
 4. Deploy: `fly deploy`
 
-### Option D: Din egen server (VPS)
+### Option D: Your own server (VPS)
 
 ```bash
-# På din server
-git clone <din-repo>
+# On your server
+git clone <your-repo>
 cd vibecodingcoin
 
-# Byg og kør Docker container
+# Build and run Docker container
 docker-compose up -d
 
-# Container kører nu på port 8080
-# Sørg for at åbne porten i din firewall
+# Container now runs on port 8080
+# Make sure to open the port in your firewall
 ```
 
-## Step 2: Konfigurer Vercel
+## Step 2: Configure Vercel
 
-1. Gå til dit Vercel project dashboard
-2. Gå til "Settings" → "Environment Variables"
-3. Tilføj følgende variable:
+1. Go to your Vercel project dashboard
+2. Go to "Settings" → "Environment Variables"
+3. Add the following variable:
    - **Key**: `ENGINE_URL`
-   - **Value**: URL fra Step 1 (f.eks. `https://vibecodingcoin-engine.onrender.com`)
-   - **Environments**: Vælg "Production", "Preview", og "Development"
-4. Klik "Save"
+   - **Value**: URL from Step 1 (e.g. `https://vibecodingcoin-engine.onrender.com`)
+   - **Environments**: Select "Production", "Preview", and "Development"
+4. Click "Save"
 
 ## Step 3: Redeploy Vercel
 
@@ -74,98 +74,98 @@ docker-compose up -d
 # Trigger redeploy via terminal
 vercel --prod
 
-# Eller via Vercel dashboard
-# Gå til "Deployments" tab og klik "Redeploy"
+# Or via Vercel dashboard
+# Go to "Deployments" tab and click "Redeploy"
 ```
 
 ## Test Setup
 
-1. Åben din Vercel URL i browser
-2. Åben i flere tabs eller forskellige browsere
-3. Alle brugere skulle nu se det samme spil state
-4. Pixel kampe synkroniseres på tværs af alle clients
+1. Open your Vercel URL in browser
+2. Open in multiple tabs or different browsers
+3. All users should now see the same game state
+4. Pixel battles are synchronized across all clients
 
-## Lokal Test (Med Docker)
+## Local Testing (With Docker)
 
 ```bash
-# Start Docker engine lokalt
+# Start Docker engine locally
 docker-compose up
 
-# I en anden terminal, start Next.js med ENGINE_URL
+# In another terminal, start Next.js with ENGINE_URL
 ENGINE_URL=http://localhost:8080 npm run dev
 
-# Åben http://localhost:3000
+# Open http://localhost:3000
 ```
 
 ## Monitoring
 
 ### Docker Container
 
-- **Render**: Dashboard viser logs og metrics
-- **Railway**: Se logs i project dashboard
+- **Render**: Dashboard shows logs and metrics
+- **Railway**: See logs in project dashboard
 - **Docker Compose**: `docker-compose logs -f game-engine`
 
 ### Health Check Endpoint
 
 ```bash
-curl https://din-engine-url.com/api/round/state
+curl https://your-engine-url.com/api/round/state
 ```
 
 ## Troubleshooting
 
 ### "Failed to connect to game engine"
 
-1. Tjek at Docker containeren kører
-2. Verificer ENGINE_URL er korrekt sat i Vercel
-3. Test engine URL direkte: `curl https://din-engine-url.com/api/round/state`
+1. Check that Docker container is running
+2. Verify ENGINE_URL is correctly set in Vercel
+3. Test engine URL directly: `curl https://your-engine-url.com/api/round/state`
 
-### Stream ikke opdaterer
+### Stream not updating
 
-1. Tjek at `/api/stream` endpoint virker: `curl https://din-engine-url.com/api/stream`
-2. Verificer CORS er enabled i Docker serveren (allerede konfigureret)
-3. Tjek browser console for fejl
+1. Check that `/api/stream` endpoint works: `curl https://your-engine-url.com/api/stream`
+2. Verify CORS is enabled in Docker server (already configured)
+3. Check browser console for errors
 
-### Docker container crasher
+### Docker container crashes
 
-1. Tjek logs: `docker logs <container-id>`
-2. Reducer `FIGHTS_PER_TICK` hvis CPU er for høj
-3. Øg `TICK_INTERVAL_MS` for at reducere CPU load
+1. Check logs: `docker logs <container-id>`
+2. Reduce `FIGHTS_PER_TICK` if CPU is too high
+3. Increase `TICK_INTERVAL_MS` to reduce CPU load
 
 ## Performance Tuning
 
 ### Environment Variables
 
 ```bash
-# I din Docker deployment, tilpas disse:
-FIGHTS_PER_TICK=1200  # Antal pixel kampe per tick (lavere = hurtigere server)
-TICK_INTERVAL_MS=15   # Millisekunder mellem ticks (højere = mindre CPU)
+# In your Docker deployment, adjust these:
+FIGHTS_PER_TICK=1200  # Number of pixel battles per tick (lower = faster server)
+TICK_INTERVAL_MS=15   # Milliseconds between ticks (higher = less CPU)
 ```
 
-### Anbefalet Configuration
+### Recommended Configuration
 
 - **Free tier**: `FIGHTS_PER_TICK=800`, `TICK_INTERVAL_MS=20`
 - **Paid tier**: `FIGHTS_PER_TICK=1200`, `TICK_INTERVAL_MS=15`
 - **High performance**: `FIGHTS_PER_TICK=2000`, `TICK_INTERVAL_MS=10`
 
-## Sikkerhed
+## Security
 
-Docker serveren accepterer alle connections (CORS enabled). For produktion:
+The Docker server accepts all connections (CORS enabled). For production:
 
-1. Overvej at tilføje API key validation
-2. Rate limiting på endpoints
-3. Brug HTTPS (automatisk på Render/Railway/Fly)
+1. Consider adding API key validation
+2. Rate limiting on endpoints
+3. Use HTTPS (automatic on Render/Railway/Fly)
 
 ## Costs
 
-- **Render Free**: Gratis, men går i sleep efter 15 min inaktivitet
-- **Render Starter**: $7/måned, altid aktiv
-- **Railway**: Pay-as-you-go, ~$5-10/måned for small app
-- **Fly.io**: Free tier med begrænsninger
-- **Vercel**: Gratis for frontend
+- **Render Free**: Free, but goes to sleep after 15 min inactivity
+- **Render Starter**: $7/month, always active
+- **Railway**: Pay-as-you-go, ~$5-10/month for small app
+- **Fly.io**: Free tier with limitations
+- **Vercel**: Free for frontend
 
 ## Support
 
-Hvis du har problemer, tjek:
+If you have problems, check:
 1. Docker container logs
 2. Vercel function logs
 3. Browser developer console
