@@ -330,25 +330,92 @@ export default function Home() {
 
   function DarkStat({ label, value }: { label: string; value: string }) {
     return (
-      <div style={{ background: '#0f1115', border: '1px solid #1f2430', borderRadius: 10, padding: '8px 12px', minWidth: 120 }}>
-        <div style={{ fontSize: 11, color: '#6b7280', marginBottom: 2 }}>{label}</div>
-        <div style={{ fontWeight: 700, color: '#e5e7eb', fontSize: 15 }}>{value}</div>
+      <div className="dark-stat">
+        <div className="dark-stat-label">{label}</div>
+        <div className="dark-stat-value">{value}</div>
+        <style jsx>{`
+          .dark-stat {
+            background: #0f1115;
+            border: 1px solid #1f2430;
+            border-radius: 10px;
+            padding: 8px 12px;
+            min-width: 120px;
+          }
+
+          .dark-stat-label {
+            font-size: 11px;
+            color: #6b7280;
+            margin-bottom: 2px;
+          }
+
+          .dark-stat-value {
+            font-weight: 700;
+            color: #e5e7eb;
+            font-size: 15px;
+          }
+
+          @media (max-width: 1400px) {
+            .dark-stat {
+              min-width: 100px;
+              padding: 7px 10px;
+            }
+            
+            .dark-stat-label {
+              font-size: 10px;
+            }
+            
+            .dark-stat-value {
+              font-size: 14px;
+            }
+          }
+
+          @media (max-width: 768px) {
+            .dark-stat {
+              min-width: 80px;
+              padding: 6px 8px;
+            }
+            
+            .dark-stat-label {
+              font-size: 9px;
+            }
+            
+            .dark-stat-value {
+              font-size: 13px;
+            }
+          }
+
+          @media (max-width: 480px) {
+            .dark-stat {
+              min-width: auto;
+              width: 100%;
+              padding: 8px 12px;
+            }
+            
+            .dark-stat-label {
+              font-size: 10px;
+            }
+            
+            .dark-stat-value {
+              font-size: 14px;
+            }
+          }
+        `}</style>
       </div>
     )
   }
 
   return (
     <div style={{ background: '#0b0d12', minHeight: '100vh', color: '#e5e7eb' }}>
-      <div style={{ maxWidth: 1400, margin: '0 auto', padding: 20 }}>
+      <div className="page-container">
         {/* Header */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', alignItems: 'center', gap: 20, marginBottom: 20 }}>
-          <div style={{ display: 'flex', gap: 12 }}>
+        <div className="page-header">
+          <div className="header-stats-left">
             <DarkStat label="Total Pixels" value={gameState.totalPixels.toString()} />
             <DarkStat label="Active Players" value={liveActivePlayers.toString()} />
             <DarkStat label="Fee Pool" value={`${feePoolSOL.toFixed(4)} SOL`} />
           </div>
-          <div style={{ textAlign: 'center', fontWeight: 800, fontSize: 18, letterSpacing: 0.5 }}>Pixel Arena</div>
-          <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 12 }}>
+          <div className="header-title">Pixel Arena</div>
+          <div className="header-stats-right">
             <DarkStat label="Round Time" value={roundTimer} />
             <DarkStat label="Round" value={`#${gameState.currentRound}`} />
             <a
@@ -357,7 +424,7 @@ export default function Home() {
               rel="noopener noreferrer"
               aria-label="Open X account"
               title="Open X account"
-              style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 38, height: 38, borderRadius: 10, border: '1px solid #1f2430', background: '#0f1115' }}
+              className="header-social-link"
             >
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M18.244 2H21L13.5 10.51L22 22h-6.222l-4.86-6.36L5.244 22H2.488l7.94-9.174L2 2h6.333l4.392 5.8L18.244 2Zm-1.066 18h1.934L8.898 4H6.898l10.28 16Z" fill="#e5e7eb"/>
@@ -367,53 +434,266 @@ export default function Home() {
         </div>
 
         {/* Main Grid */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 400px', gap: 20, alignItems: 'start' }}>
+        <div className="main-grid">
           {/* Canvas Area */}
-          <div style={{ 
-            background: '#0f1115', 
-            border: '1px solid #1f2430', 
-            borderRadius: 16, 
-            overflow: 'hidden',
-            boxShadow: '0 4px 20px rgba(0,0,0,0.3)'
-          }}>
+          <div className="battlefield-container">
             <div style={{ aspectRatio: '1 / 1', width: '100%' }}>
               <Battlefield pixels={gameState.pixels} />
             </div>
           </div>
 
           {/* Leaderboard Area */}
-          <div style={{ 
-            background: '#0f1115', 
-            border: '1px solid #1f2430', 
-            borderRadius: 16, 
-            height: 'calc(100vh - 140px)', 
-            overflow: 'hidden',
-            boxShadow: '0 4px 20px rgba(0,0,0,0.3)'
-          }}>
+          <div className="leaderboard-container">
             <Leaderboard holders={[...liveHolders].sort((a, b) => b.pixels - a.pixels)} />
           </div>
         </div>
       </div>
 
+      {/* Responsive Styles */}
+      <style jsx>{`
+        .page-container {
+          max-width: 1400px;
+          margin: 0 auto;
+          padding: 20px;
+        }
+
+        .page-header {
+          display: grid;
+          grid-template-columns: 1fr auto 1fr;
+          align-items: center;
+          gap: 20px;
+          margin-bottom: 20px;
+        }
+
+        .header-stats-left,
+        .header-stats-right {
+          display: flex;
+          gap: 12px;
+        }
+
+        .header-stats-right {
+          justify-content: flex-end;
+          align-items: center;
+        }
+
+        .header-title {
+          text-align: center;
+          font-weight: 800;
+          font-size: 18px;
+          letter-spacing: 0.5px;
+        }
+
+        .header-social-link {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          width: 38px;
+          height: 38px;
+          border-radius: 10px;
+          border: 1px solid #1f2430;
+          background: #0f1115;
+        }
+
+        .main-grid {
+          display: grid;
+          grid-template-columns: 1fr 400px;
+          gap: 20px;
+          align-items: start;
+        }
+
+        .battlefield-container {
+          background: #0f1115;
+          border: 1px solid #1f2430;
+          border-radius: 16px;
+          overflow: hidden;
+          box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+        }
+
+        .leaderboard-container {
+          background: #0f1115;
+          border: 1px solid #1f2430;
+          border-radius: 16px;
+          height: calc(100vh - 140px);
+          overflow: hidden;
+          box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+        }
+
+        /* Tablets og mindre desktops (≤1400px) */
+        @media (max-width: 1400px) {
+          .page-container {
+            padding: 16px;
+          }
+          
+          .page-header {
+            gap: 16px;
+          }
+
+          .header-stats-left,
+          .header-stats-right {
+            gap: 8px;
+          }
+
+          .main-grid {
+            grid-template-columns: 1fr 340px;
+            gap: 16px;
+          }
+
+          .leaderboard-container {
+            height: calc(100vh - 130px);
+          }
+        }
+
+        /* Mindre skærme (≤1200px) */
+        @media (max-width: 1200px) {
+          .page-header {
+            grid-template-columns: 1fr;
+            gap: 12px;
+          }
+
+          .header-title {
+            order: -1;
+            font-size: 20px;
+            margin-bottom: 8px;
+          }
+
+          .header-stats-left {
+            justify-content: center;
+            flex-wrap: wrap;
+          }
+
+          .header-stats-right {
+            justify-content: center;
+            flex-wrap: wrap;
+          }
+
+          .main-grid {
+            grid-template-columns: 1fr;
+            gap: 16px;
+          }
+
+          .leaderboard-container {
+            height: 500px;
+          }
+        }
+
+        /* Tablet (≤768px) */
+        @media (max-width: 768px) {
+          .page-container {
+            padding: 12px;
+          }
+
+          .page-header {
+            gap: 10px;
+          }
+
+          .header-title {
+            font-size: 18px;
+            margin-bottom: 6px;
+          }
+
+          .header-stats-left,
+          .header-stats-right {
+            gap: 6px;
+          }
+
+          .main-grid {
+            gap: 12px;
+          }
+
+          .leaderboard-container {
+            height: 400px;
+          }
+        }
+
+        /* Mobil (≤480px) */
+        @media (max-width: 480px) {
+          .page-container {
+            padding: 8px;
+          }
+
+          .page-header {
+            gap: 8px;
+          }
+
+          .header-title {
+            font-size: 16px;
+          }
+
+          .header-stats-left,
+          .header-stats-right {
+            flex-direction: column;
+            align-items: stretch;
+            width: 100%;
+            gap: 6px;
+          }
+
+          .header-social-link {
+            width: 100%;
+            height: 42px;
+          }
+
+          .main-grid {
+            gap: 8px;
+          }
+
+          .battlefield-container,
+          .leaderboard-container {
+            border-radius: 12px;
+          }
+
+          .leaderboard-container {
+            height: 350px;
+          }
+        }
+
+        /* Modal Styles */
+        .modal-backdrop {
+          position: fixed;
+          inset: 0;
+          background: rgba(0, 0, 0, 0.65);
+          backdrop-filter: blur(10px) grayscale(1);
+          -webkit-backdrop-filter: blur(10px) grayscale(1);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          z-index: 1000;
+          padding: 20px;
+        }
+
+        .modal-card {
+          background: #0f1115;
+          border-radius: 14px;
+          padding: 24px;
+          width: 100%;
+          max-width: 420px;
+          text-align: center;
+          border: 1px solid #1f2430;
+          box-shadow: 0 20px 60px rgba(0, 0, 0, 0.45);
+          color: #e5e7eb;
+        }
+
+        @media (max-width: 480px) {
+          .modal-card {
+            padding: 20px;
+            border-radius: 12px;
+            max-width: 100%;
+          }
+        }
+
+        @keyframes spin {
+          from {
+            transform: rotate(0deg);
+          }
+          to {
+            transform: rotate(360deg);
+          }
+        }
+      `}</style>
+
       {/* Winner Modal (dark theme, simple, no emojis, smooth close) */}
       {showWinnerPopup && (
-        <div style={{
-          position: 'fixed', inset: 0,
-          background: 'rgba(0,0,0,0.65)',
-          backdropFilter: 'blur(10px) grayscale(1)',
-          WebkitBackdropFilter: 'blur(10px) grayscale(1)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          zIndex: 1000
-        }}>
-          <div style={{
-            background: '#0f1115',
-            borderRadius: 14,
-            padding: 24,
-            width: 420,
-            textAlign: 'center',
-            border: `1px solid #1f2430`,
-            boxShadow: '0 20px 60px rgba(0,0,0,0.45)',
-            color: '#e5e7eb',
+        <div className="modal-backdrop">
+          <div className="modal-card" style={{
             transform: winnerClosing ? 'translateY(8px)' : 'translateY(0)',
             opacity: winnerClosing ? 0 : 1,
             transition: 'opacity 160ms ease, transform 160ms ease'
@@ -424,11 +704,11 @@ export default function Home() {
               </svg>
               <div style={{ fontWeight: 800, letterSpacing: 0.4 }}>Winner</div>
             </div>
-            <div style={{ color: '#9aa1ac', wordBreak: 'break-all', marginBottom: 6 }}>
+            <div style={{ color: '#9aa1ac', wordBreak: 'break-all', marginBottom: 6, fontSize: 14 }}>
               {winnerInfo.address ? `${winnerInfo.address.substring(0, 6)}...${winnerInfo.address.substring(Math.max(0, winnerInfo.address.length - 4))}` : ''}
             </div>
-            <div style={{ color: '#e5e7eb', marginBottom: 16, fontVariantNumeric: 'tabular-nums' }}>Started with {winnerInfo.startingPixels} px</div>
-            <div style={{ color: '#e5e7eb', marginBottom: 6 }}>Next round starts in</div>
+            <div style={{ color: '#e5e7eb', marginBottom: 16, fontVariantNumeric: 'tabular-nums', fontSize: 14 }}>Started with {winnerInfo.startingPixels} px</div>
+            <div style={{ color: '#e5e7eb', marginBottom: 6, fontSize: 14 }}>Next round starts in</div>
             <div style={{ fontSize: 36, fontWeight: 800, color: '#10b981' }}>{nextRoundCountdown}s</div>
           </div>
         </div>
@@ -436,55 +716,24 @@ export default function Home() {
 
       {/* Loading Modal */}
       {showLoadingPopup && (
-        <div style={{
-          position: 'fixed', inset: 0,
-          background: 'rgba(0,0,0,0.65)',
-          backdropFilter: 'blur(10px) grayscale(1)',
-          WebkitBackdropFilter: 'blur(10px) grayscale(1)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          zIndex: 1100
-        }}>
-          <div style={{
-            background: '#0f1115',
-            borderRadius: 14,
-            padding: 24,
-            width: 360,
-            textAlign: 'center',
-            border: '1px solid #1f2430',
-            boxShadow: '0 20px 60px rgba(0,0,0,0.45)',
-            color: '#e5e7eb'
-          }}>
+        <div className="modal-backdrop" style={{ zIndex: 1100 }}>
+          <div className="modal-card">
             <div style={{ display: 'inline-flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ animation: 'spin 1s linear infinite' }}>
                 <circle cx="12" cy="12" r="9" stroke="#60a5fa" strokeWidth="2" opacity="0.25" />
                 <path d="M21 12a9 9 0 0 1-9 9" stroke="#60a5fa" strokeWidth="2" />
               </svg>
-              <div style={{ fontWeight: 800, letterSpacing: 0.4 }}>Loading from server…</div>
+              <div style={{ fontWeight: 800, letterSpacing: 0.4, fontSize: 15 }}>Loading from server…</div>
             </div>
-            <div style={{ color: '#9aa1ac' }}>Fetching current game state…</div>
+            <div style={{ color: '#9aa1ac', fontSize: 14 }}>Fetching current game state…</div>
           </div>
         </div>
       )}
 
       {/* Claim Modal */}
       {showClaimPopup && (
-        <div style={{
-          position: 'fixed', inset: 0,
-          background: 'rgba(0,0,0,0.65)',
-          backdropFilter: 'blur(10px) grayscale(1)',
-          WebkitBackdropFilter: 'blur(10px) grayscale(1)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          zIndex: 1000
-        }}>
-          <div style={{
-            background: '#0f1115',
-            borderRadius: 14,
-            padding: 24,
-            width: 460,
-            textAlign: 'center',
-            border: '1px solid #1f2430',
-            boxShadow: '0 20px 60px rgba(0,0,0,0.45)',
-            color: '#e5e7eb',
+        <div className="modal-backdrop">
+          <div className="modal-card" style={{
             transform: claimClosing ? 'translateY(8px)' : 'translateY(0)',
             opacity: claimClosing ? 0 : 1,
             transition: 'opacity 160ms ease, transform 160ms ease'
@@ -493,32 +742,17 @@ export default function Home() {
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M12 2L15 8L22 9L17 14L18 21L12 18L6 21L7 14L2 9L9 8L12 2Z" stroke="#10b981" strokeWidth="1.5"/>
               </svg>
-              <div style={{ fontWeight: 800, letterSpacing: 0.4 }}>Claiming fee pool…</div>
+              <div style={{ fontWeight: 800, letterSpacing: 0.4, fontSize: 15 }}>Claiming fee pool…</div>
             </div>
-            <div style={{ color: '#9aa1ac' }}>Please wait while fees are being collected.</div>
+            <div style={{ color: '#9aa1ac', fontSize: 14 }}>Please wait while fees are being collected.</div>
           </div>
         </div>
       )}
 
       {/* Snapshot Modal (dark theme, simple, no emojis, smooth close) */}
       {showSnapshotPopup && (
-        <div style={{
-          position: 'fixed', inset: 0,
-          background: 'rgba(0,0,0,0.65)',
-          backdropFilter: 'blur(10px) grayscale(1)',
-          WebkitBackdropFilter: 'blur(10px) grayscale(1)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          zIndex: 1000
-        }}>
-          <div style={{
-            background: '#0f1115',
-            borderRadius: 14,
-            padding: 24,
-            width: 480,
-            textAlign: 'center',
-            border: '1px solid #1f2430',
-            boxShadow: '0 20px 60px rgba(0,0,0,0.45)',
-            color: '#e5e7eb',
+        <div className="modal-backdrop">
+          <div className="modal-card" style={{
             transform: snapshotClosing ? 'translateY(8px)' : 'translateY(0)',
             opacity: snapshotClosing ? 0 : 1,
             transition: 'opacity 160ms ease, transform 160ms ease'
@@ -528,9 +762,9 @@ export default function Home() {
                 <rect x="3" y="6" width="18" height="12" rx="2" stroke="#60a5fa" strokeWidth="1.5"/>
                 <circle cx="12" cy="12" r="3" stroke="#60a5fa" strokeWidth="1.5"/>
               </svg>
-              <div style={{ fontWeight: 800, letterSpacing: 0.4 }}>Taking snapshot</div>
+              <div style={{ fontWeight: 800, letterSpacing: 0.4, fontSize: 15 }}>Taking snapshot</div>
             </div>
-            <div style={{ color: '#9aa1ac', marginBottom: 14 }}>Fetching top 100 holders…</div>
+            <div style={{ color: '#9aa1ac', marginBottom: 14, fontSize: 14 }}>Fetching top 100 holders…</div>
             <div style={{ fontSize: 36, fontWeight: 800, color: '#60a5fa' }}>{snapshotCountdown}s</div>
           </div>
         </div>
@@ -538,23 +772,8 @@ export default function Home() {
 
       {/* Round Start Modal */}
       {showRoundStartPopup && (
-        <div style={{
-          position: 'fixed', inset: 0,
-          background: 'rgba(0,0,0,0.65)',
-          backdropFilter: 'blur(10px) grayscale(1)',
-          WebkitBackdropFilter: 'blur(10px) grayscale(1)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          zIndex: 1000
-        }}>
-          <div style={{
-            background: '#0f1115',
-            borderRadius: 14,
-            padding: 24,
-            width: 420,
-            textAlign: 'center',
-            border: '1px solid #1f2430',
-            boxShadow: '0 20px 60px rgba(0,0,0,0.45)',
-            color: '#e5e7eb',
+        <div className="modal-backdrop">
+          <div className="modal-card" style={{
             transform: roundStartClosing ? 'translateY(8px)' : 'translateY(0)',
             opacity: roundStartClosing ? 0 : 1,
             transition: 'opacity 160ms ease, transform 160ms ease'
@@ -564,22 +783,22 @@ export default function Home() {
                 <rect x="4" y="6" width="16" height="12" rx="2" stroke="#60a5fa" strokeWidth="1.5"/>
                 <path d="M8 10h8M8 14h8" stroke="#60a5fa" strokeWidth="1.5"/>
               </svg>
-              <div style={{ fontWeight: 800, letterSpacing: 0.4 }}>Round starting</div>
+              <div style={{ fontWeight: 800, letterSpacing: 0.4, fontSize: 15 }}>Round starting</div>
             </div>
             <div style={{ fontSize: 36, fontWeight: 800, color: '#60a5fa' }}>{roundStartCountdown}</div>
           </div>
         </div>
       )}
       {/* Footer */}
-      <div style={{ borderTop: '1px solid #1f2430', marginTop: 16 }}>
-        <div style={{ maxWidth: 1360, margin: '0 auto', padding: '12px 24px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
+      <div className="page-footer">
+        <div className="page-footer-inner">
           <a
             href="https://x.com/pixelarenapump"
             target="_blank"
             rel="noopener noreferrer"
             aria-label="Open X account"
             title="Open X account"
-            style={{ display: 'inline-flex', alignItems: 'center', gap: 10, color: '#9aa1ac', textDecoration: 'none' }}
+            className="footer-link"
           >
             <span style={{ display: 'inline-flex', width: 18, height: 18, alignItems: 'center', justifyContent: 'center' }}>
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -590,6 +809,46 @@ export default function Home() {
           </a>
         </div>
       </div>
+
+      {/* Footer Styles */}
+      <style jsx>{`
+        .page-footer {
+          border-top: 1px solid #1f2430;
+          margin-top: 16px;
+        }
+
+        .page-footer-inner {
+          max-width: 1360px;
+          margin: 0 auto;
+          padding: 12px 24px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 10px;
+        }
+
+        .footer-link {
+          display: inline-flex;
+          align-items: center;
+          gap: 10px;
+          color: #9aa1ac;
+          text-decoration: none;
+        }
+
+        .footer-link:hover {
+          color: #e5e7eb;
+        }
+
+        @media (max-width: 480px) {
+          .page-footer-inner {
+            padding: 10px 16px;
+          }
+
+          .footer-link span:last-child {
+            font-size: 14px;
+          }
+        }
+      `}</style>
 
       {/* System Status Indicator */}
       <SystemStatus />
