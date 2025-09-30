@@ -321,7 +321,11 @@ export function startServerFlow(params?: { holders?: Holder[]; claimMs?: number;
   ;(async () => {
     try {
       console.log('[GameEngine] 🎯 Starting claim process...')
-      const baseUrl = process.env.APP_URL || process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'
+      // Brug intern URL på server-side for at undgå networking problemer på Render
+      const port = process.env.PORT || 3000
+      const baseUrl = process.env.NODE_ENV === 'production' 
+        ? `http://localhost:${port}` 
+        : (process.env.APP_URL || 'http://localhost:3000')
       const claimUrl = `${baseUrl.replace(/\/$/, '')}/api/claim`
       console.log('[GameEngine] Claim URL:', claimUrl)
       
@@ -350,8 +354,8 @@ export function startServerFlow(params?: { holders?: Holder[]; claimMs?: number;
       }
     } catch (error: any) {
       console.error('[GameEngine] ❌ Claim request failed:', error?.message || error)
-      console.error('[GameEngine] ℹ️ Tjek at APP_URL er sat korrekt i environment variables')
-      console.error('[GameEngine] ℹ️ For Render deployment: APP_URL skal være din Render URL (fx https://pixelarena.onrender.com)')
+      console.error('[GameEngine] ℹ️ Tjek at CLAIMER_PUBLIC_KEY og CLAIMER_SECRET_KEY_BASE58 er sat i environment variables')
+      console.error('[GameEngine] ℹ️ Tjek også at SOLANA_RPC_ENDPOINT virker korrekt')
     }
   })()
   

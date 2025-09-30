@@ -9,7 +9,7 @@ export const dynamic = 'force-dynamic'
 
 export async function POST() {
   try {
-    const rpc = process.env.SOLANA_RPC_ENDPOINT || process.env.RPC_ENDPOINT || 'https://api.mainnet.solana.com'
+    const rpc = process.env.SOLANA_RPC_ENDPOINT || process.env.RPC_ENDPOINT || 'https://api.mainnet-beta.solana.com'
     const portal = process.env.PUMPPORTAL_URL || 'https://pumpportal.fun/api/trade-local'
     // Understøt både vores navne og dine Python-navne
     const pubStr = process.env.CLAIMER_PUBLIC_KEY || process.env.PUBLIC_KEY
@@ -18,6 +18,11 @@ export async function POST() {
     if (!pubStr || !secStr) {
       return NextResponse.json({ error: 'missing env: set CLAIMER_PUBLIC_KEY/CLAIMER_SECRET_KEY_BASE58 or PUBLIC_KEY/PRIVATE_KEY in .env.local' }, { status: 500 })
     }
+
+    console.log('[Claim] ============================================================')
+    console.log('[Claim] PUMP.FUN CREATOR FEE CLAIMER')
+    console.log('[Claim] ============================================================')
+    console.log('[Claim] Wallet:', `${pubStr.substring(0, 8)}...${pubStr.substring(pubStr.length - 8)}`)
 
     const connection = new Connection(rpc, 'confirmed')
     const pubkey = new PublicKey(pubStr)
@@ -45,10 +50,16 @@ export async function POST() {
       }
     }
 
-    // Balance før claim (robust)
+    // Tjek balance FØR claim
+    console.log('[Claim] Tjekker wallet balance FØR claim...')
     const beforeLamports = await robustGetBalance(pubkey)
+    console.log('[Claim] Balance foer claim:', (beforeLamports / 1e9).toFixed(9), 'SOL')
 
-    // Hent prebuildet tx fra PumpPortal (samme semantik som python: form POST)
+    // Claim fees
+    console.log('[Claim] Claimer creator fees...')
+    
+    // Hent prebuildet tx fra PumpPortal (samme som Python script)
+    console.log('[Claim] Anmoder om collect transaction fra PumpPortal...')
     const form = new URLSearchParams()
     form.set('publicKey', pubkey.toBase58())
     form.set('action', 'collectCreatorFee')
@@ -59,13 +70,26 @@ export async function POST() {
       body: form
     })
 
+    console.log('[Claim] PumpPortal response status:', resp.status)
+    
+    // Hvis fejl response (ikke 200), tjek om det er pga. ingen fees
     if (!resp.ok) {
-      const text = await resp.text().catch(() => '')
-      console.log('[Claim] ⚠️ PumpPortal returnerede fejl (sandsynligvis ingen fees at claime):', resp.status, text)
+      const errorText = await resp.text().catch(() => '')
+      console.log('[Claim] ⚠️ PumpPortal fejl response:', errorText)
       
-      // Hvis der ingen fees er at claime, er det OK - bare returner 0
-      if (text.includes('Insufficient funds') || text.includes('simulation failed')) {
-        console.log('[Claim] Ingen fees at claime - returnerer 0')
+      // Parse JSON fejl hvis muligt
+      let errorObj: any = null
+      try {
+        errorObj = JSON.parse(errorText)
+      } catch {}
+      
+      // Tjek for "no fees to claim" typer fejl
+      const errorStr = errorText.toLowerCase()
+      if (errorStr.includes('simulation failed') || 
+          errorStr.includes('insufficient funds') ||
+          errorStr.includes('no fees') ||
+          (errorObj && errorObj.error && errorObj.error.toLowerCase().includes('simulation'))) {
+        console.log('[Claim] Ingen fees at claime endnu - returnerer 0')
         return NextResponse.json({
           signature: null,
           claimedLamports: 0,
@@ -74,52 +98,79 @@ export async function POST() {
           payoutSOL: 0,
           payoutSignature: null,
           winnerAddress: null,
-          message: 'No fees to claim yet'
+          message: 'No creator fees available to claim'
         })
       }
       
-      return NextResponse.json({ error: `pumpportal ${resp.status}`, details: text || 'no body' }, { status: 500 })
+      return NextResponse.json({ error: `PumpPortal error ${resp.status}`, details: errorText }, { status: 500 })
     }
 
-    // Forsøg at parse både raw-bytes og evt. JSON-b64
-    let buf: Buffer | null = null
-    const ct = resp.headers.get('content-type') || ''
-    if (ct.includes('application/json')) {
-      const j = await resp.json().catch(() => null as any)
-      if (!j) return NextResponse.json({ error: 'invalid json from pumpportal' }, { status: 500 })
-      const base64 = j.transaction || j.tx || j.base64 || j.swapTransaction
-      if (!base64 || typeof base64 !== 'string') {
-        return NextResponse.json({ error: 'missing transaction in pumpportal json', body: j }, { status: 500 })
-      }
-      buf = Buffer.from(base64, 'base64')
-    } else {
-      // antag raw bytes
-      const ab = await resp.arrayBuffer()
-      buf = Buffer.from(ab)
-    }
+    // Parse transaction bytes (samme som Python: response.content)
+    console.log('[Claim] Parsing transaction bytes...')
+    const ab = await resp.arrayBuffer()
+    const buf = Buffer.from(ab)
 
+    // Deserialize og sign (PRÆCIS som Python script)
     const tx = VersionedTransaction.deserialize(buf)
     tx.sign([keypair])
 
-    const signature = await connection.sendRawTransaction(tx.serialize(), {
-      skipPreflight: false,
-      preflightCommitment: 'confirmed'
-    })
-    await connection.confirmTransaction(signature, 'confirmed')
-
-    // Balance efter claim (robust) – poll som i python (de venter ~15s)
-    let afterLamports = await robustGetBalance(pubkey)
-    let attempts = 0
-    const maxAttempts = 10 // ~20s ved 2s interval
-    while (attempts < maxAttempts) {
-      await new Promise(r => setTimeout(r, 2000))
-      const val = await robustGetBalance(pubkey)
-      afterLamports = val
-      // Break tidligt hvis ændring registreres (kan også være negativ pga. fees; vi håndterer nedenfor)
-      if (afterLamports !== beforeLamports) break
-      attempts++
+    // Send transaction PRÆCIS som Python: via JSON RPC (ikke web3.js abstraction)
+    console.log('[Claim] Sender transaction til Solana...')
+    const serializedTx = Buffer.from(tx.serialize()).toString('base64')
+    const sendPayload = {
+      jsonrpc: '2.0',
+      id: 1,
+      method: 'sendTransaction',
+      params: [
+        serializedTx,
+        {
+          encoding: 'base64',
+          preflightCommitment: 'confirmed'
+        }
+      ]
     }
+    
+    const sendResponse = await axios.post(rpc, sendPayload, {
+      headers: { 'Content-Type': 'application/json' },
+      timeout: 30000
+    })
+    
+    const sendResult = sendResponse.data
+    if (sendResult.error) {
+      throw new Error(`Transaction fejl: ${JSON.stringify(sendResult.error)}`)
+    }
+    
+    const signature = sendResult.result
+    if (!signature) {
+      throw new Error('Ingen transaction signature modtaget')
+    }
+    
+    console.log('[Claim] SUCCESS! Transaction sendt!')
+    console.log('[Claim] Signature:', signature)
+    console.log('[Claim] Solscan:', `https://solscan.io/tx/${signature}`)
+    
+    // Vent præcis 15 sekunder som Python scriptet
+    console.log('[Claim] Venter på confirmation (15 sekunder)...')
+    await new Promise(r => setTimeout(r, 15000))
+    
+    // Tjek balance efter claim
+    console.log('[Claim] Tjekker wallet balance EFTER claim...')
+    const afterLamports = await robustGetBalance(pubkey)
     const diffLamports = Math.max(0, afterLamports - beforeLamports)
+    
+    // Output som Python scriptet
+    console.log('[Claim] ============================================================')
+    console.log('[Claim] CLAIM RESULTAT')
+    console.log('[Claim] ============================================================')
+    console.log('[Claim] Balance FOER claim: ', (beforeLamports / 1e9).toFixed(9), 'SOL')
+    console.log('[Claim] Balance EFTER claim:', (afterLamports / 1e9).toFixed(9), 'SOL')
+    console.log('[Claim] ------------------------------------------------------------')
+    if (diffLamports > 0) {
+      console.log('[Claim] Amount Claimed =', (diffLamports / 1e9).toFixed(9), 'SOL')
+    } else {
+      console.log('[Claim] Amount Claimed = 0 SOL')
+    }
+    console.log('[Claim] ============================================================')
     const payoutLamports = Math.floor(diffLamports * 0.3) // 30% til vinder
 
     // Hent den seneste pending vinder fra databasen

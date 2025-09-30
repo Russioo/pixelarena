@@ -321,7 +321,7 @@ export default function Home() {
           const holders: Holder[] = (s.holders && s.holders.length ? s.holders : snapshotHoldersRef.current) || []
           if (holders[idx]) {
             snapshotHoldersRef.current = holders
-            setWinnerInfo({ address: holders[idx].address, color: holders[idx].color, startingPixels: Math.max(0, Math.floor(holders[idx].pixels || 0)) })
+            setWinnerInfo({ address: holders[idx].address, color: holders[idx].color, startingPixels: Math.max(0, Math.floor(holders[idx].pixels || 0)), feesSOL: 0 })
             setWinnerClosing(false)
             setShowWinnerPopup(true)
             const endAt = typeof s.nextRoundAt === 'number' ? s.nextRoundAt : (Date.now() + 10000)

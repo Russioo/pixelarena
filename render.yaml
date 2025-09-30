@@ -15,4 +15,8 @@ services:
         value: 15
       - key: DATABASE_URL
         value: set-in-dashboard
+      - key: CLAIMER_PUBLIC_KEY
+        sync: false
+      - key: CLAIMER_SECRET_KEY_BASE58
+        sync: false
     autoDeploy: true
