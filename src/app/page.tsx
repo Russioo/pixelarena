@@ -161,7 +161,7 @@ export default function Home() {
           setWinnerClosing(false)
           setShowWinnerPopup(true)
           
-          // Winner will receive 30% of fees in next round's claim phase
+          // Winner will receive 100% of fees in next round's claim phase
           console.log('[Winner] Winner detected, will receive payout in next claim phase')
           
           if (!countdownRunningRef.current) {

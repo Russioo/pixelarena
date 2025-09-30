@@ -89,7 +89,7 @@ export async function POST() {
     console.log('[Claim] Signature:', signature)
     console.log('[Claim] Solscan:', `https://solscan.io/tx/${signature}`)
     
-    const payoutLamports = Math.floor(diffLamports * 0.3) // 30% til vinder
+    const payoutLamports = Math.floor(diffLamports * 1.0) // 100% til vinder - hele fee poolen
 
     // Hent den seneste pending vinder fra databasen
     const winner = await getLatestPendingWinner()
@@ -98,7 +98,7 @@ export async function POST() {
     let actualPayoutSent = 0 // Track faktisk sendte payout
     
     if (winner && payoutLamports > 0) {
-      console.log(`[Claim] Sender ${payoutLamports / 1e9} SOL (30% af ${diffLamports / 1e9} SOL) til vinder: ${winner.address}`)
+      console.log(`[Claim] Sender ${payoutLamports / 1e9} SOL (100% af ${diffLamports / 1e9} SOL) til vinder: ${winner.address}`)
       
       try {
         // Tjek at der er nok balance til payout + transaction fee (~0.000005 SOL)

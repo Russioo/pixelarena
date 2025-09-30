@@ -60,7 +60,7 @@ function boot() {
           })
           .then(result => {
             console.log('[Engine] ✅ Winner saved successfully to database (pending payout):', result)
-            console.log('[Engine] 💰 Winner will receive 30% of fees in next round claim phase')
+            console.log('[Engine] 💰 Winner will receive 100% of fees in next round claim phase')
           })
           .catch(err => {
             console.error('[Engine] ❌ Failed to save winner to database:', err)
@@ -169,14 +169,14 @@ app.post('/api/claim', async (_req, res) => {
     // Vent lidt så balance er opdateret (kortere end Python som allerede ventede)
     await new Promise(r => setTimeout(r, 3000))
 
-    const payoutLamports = Math.floor(diffLamports * 0.3)
+    const payoutLamports = Math.floor(diffLamports * 1.0)
     const winner = await getLatestPendingWinner()
 
     let payoutSignature: string | null = null
     let actualPayoutSent = 0
 
     if (winner && payoutLamports > 0) {
-      console.log(`[EngineClaim] Sender ${payoutLamports / 1e9} SOL (30% af ${diffLamports / 1e9} SOL) til vinder: ${winner.address}`)
+      console.log(`[EngineClaim] Sender ${payoutLamports / 1e9} SOL (100% af ${diffLamports / 1e9} SOL) til vinder: ${winner.address}`)
       try {
         const currentBalance = await connection.getBalance(pubkey, 'confirmed')
         const txFeeReserve = 10000
