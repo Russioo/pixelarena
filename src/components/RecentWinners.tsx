@@ -39,7 +39,10 @@ export default function RecentWinners({ winners }: RecentWinnersProps) {
                   />
                 </div>
                 
-                <div className="winner-address">{short}</div>
+                <div className="winner-info">
+                  <div className="winner-address">{short}</div>
+                  <div className="winner-pixels">{w.pixels} px</div>
+                </div>
                 
                 <div className="winner-amount">
                   <div className="amount-label">Won</div>
@@ -169,12 +172,25 @@ export default function RecentWinners({ winners }: RecentWinnersProps) {
           flex-shrink: 0;
         }
 
+        .winner-info {
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+        }
+
         .winner-address {
           font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
           font-size: 13px;
           color: #e5e7eb;
           font-weight: 600;
           letter-spacing: 0.2px;
+        }
+
+        .winner-pixels {
+          font-size: 10px;
+          color: #6b7280;
+          font-weight: 500;
+          font-variant-numeric: tabular-nums;
         }
 
         .winner-amount {

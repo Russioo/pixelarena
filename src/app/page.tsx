@@ -60,6 +60,22 @@ export default function Home() {
     setGameState(prev => ({ ...prev, pixels: initialPixels }))
   }, [gameState.totalPixels])
 
+  // Fetch recent winners from Supabase on mount
+  useEffect(() => {
+    async function fetchWinners() {
+      try {
+        const response = await fetch('/api/winners')
+        const data = await response.json()
+        if (data.winners && Array.isArray(data.winners)) {
+          setGameState(prev => ({ ...prev, recentWinners: data.winners }))
+        }
+      } catch (error) {
+        console.error('Failed to fetch winners:', error)
+      }
+    }
+    fetchWinners()
+  }, [])
+
   // No local color generation needed here; server provides colors
 
   // Fælles server-event handler (phase/snapshot/winner)
@@ -106,7 +122,8 @@ export default function Home() {
                 address: winnerHolder.address,
                 fees: feesInSOL,
                 txSignature: fakeSignature,
-                color: winnerHolder.color
+                color: winnerHolder.color,
+                pixels: Math.max(0, Math.floor(winnerHolder.pixels || 0))
               },
               ...prev.recentWinners
             ].slice(0, 20) // Keep max 20 winners

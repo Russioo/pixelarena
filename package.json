@@ -4,36 +4,6 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
-    "lint": "next lint",
-    "postinstall": "sh -c 'chmod +x node_modules/.bin/next node_modules/next/dist/bin/next' || powershell -Command \"Get-ChildItem node_modules/.bin/next,node_modules/next/dist/bin/next -ErrorAction SilentlyContinue | ForEach-Object { (Get-Item $_.FullName).Attributes = 'Archive' }\" || true"
-  },
-  "dependencies": {
-    "@solana/web3.js": "^1.98.4",
-    "axios": "^1.6.2",
-    "bs58": "^6.0.0",
-    "dotenv": "^16.4.5",
-    "cors": "^2.8.5",
-    "express": "^4.19.2",
-    "next": "14.0.3",
-    "react": "^18",
-    "react-dom": "^18"
-  },
-  "devDependencies": {
-    "@types/node": "^20",
-    "@types/react": "^18",
-    "@types/react-dom": "^18",
-    "@types/express": "^4.17.21",
-    "@types/cors": "^2.8.17",
-    "eslint": "^8",
-    "eslint-config-next": "14.0.3",
-    "typescript": "^5",
-    "ts-node": "^10.9.2"
-  },
-  "bin": {},
-  "scripts": {
-    "dev": "next dev",
     "dev:docker": "docker-compose up",
     "dev:with-engine": "npm run dev",
     "build": "next build",
@@ -42,9 +12,31 @@
     "postinstall": "sh -c 'chmod +x node_modules/.bin/next node_modules/next/dist/bin/next' || powershell -Command \"Get-ChildItem node_modules/.bin/next,node_modules/next/dist/bin/next -ErrorAction SilentlyContinue | ForEach-Object { (Get-Item $_.FullName).Attributes = 'Archive' }\" || true",
     "engine": "node -r ts-node/register engine/server.ts"
   },
+  "dependencies": {
+    "@solana/web3.js": "^1.98.4",
+    "@supabase/supabase-js": "^2.58.0",
+    "axios": "^1.6.2",
+    "bs58": "^6.0.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "next": "14.0.3",
+    "react": "^18",
+    "react-dom": "^18"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.17",
+    "@types/express": "^4.17.21",
+    "@types/node": "^20",
+    "@types/react": "^18",
+    "@types/react-dom": "^18",
+    "eslint": "^8",
+    "eslint-config-next": "14.0.3",
+    "ts-node": "^10.9.2",
+    "typescript": "^5"
+  },
+  "bin": {},
   "engines": {
     "node": "20.x"
   }
 }
-
-

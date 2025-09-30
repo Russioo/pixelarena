@@ -32,5 +32,6 @@ export interface WinnerHistoryEntry {
   fees: number
   txSignature: string
   color: string
+  pixels: number
 }
 

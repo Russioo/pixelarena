@@ -9,6 +9,7 @@ import {
   setOnWinner
 } from '../src/server/gameEngine'
 import { fetchHolders } from './fetchHolders'
+import { saveWinner } from '../src/lib/supabase'
 
 const PORT = process.env.PORT ? Number(process.env.PORT) : 8080
 const app = express()
@@ -27,8 +28,21 @@ async function startWithRealHolders() {
 
 function boot() {
   try {
-    setOnWinner(() => {
+    setOnWinner((winnerIndex) => {
       try {
+        // Save winner to Supabase
+        const s = getCurrentState()
+        if (s.holders && s.holders[winnerIndex]) {
+          const winner = s.holders[winnerIndex]
+          saveWinner({
+            round: s.roundId,
+            address: winner.address,
+            fees: 0, // Will be updated when we have real fees
+            tx_signature: 'pending', // Will be updated with real tx
+            color: winner.color,
+            pixels: winner.pixels
+          }).catch(err => console.error('[Engine] Failed to save winner:', err))
+        }
         startWithRealHolders()
       } catch {}
     })
