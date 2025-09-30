@@ -196,11 +196,37 @@ export default function Home() {
         const res = await fetch('/api/round/state', { cache: 'no-store' })
         const s = res.ok ? await res.json() : null
         const running = !!(s && s.running)
+        
+        const setupSSE = () => {
+          if (sseRef.current) { try { sseRef.current.close() } catch {} }
+          const sse = new EventSource('/api/stream')
+          
+          sse.onopen = () => {
+            console.log('[SSE] Connected to stream')
+            setShowLoadingPopup(false)
+          }
+          
+          sse.onmessage = (ev) => { 
+            try { 
+              handleServerEvent(JSON.parse(ev.data)) 
+              setShowLoadingPopup(false)
+            } catch (e) {
+              console.error('[SSE] Parse error:', e)
+            }
+          }
+          
+          sse.onerror = (err) => {
+            console.error('[SSE] Connection error:', err)
+            setShowLoadingPopup(false)
+            sse.close()
+          }
+          
+          sseRef.current = sse
+        }
+        
         if (running) {
           // Attach SSE til kørende spil
-          if (sseRef.current) { try { sseRef.current.close() } catch {} }
-          sseRef.current = new EventSource('/api/stream')
-          sseRef.current.onmessage = (ev) => { try { handleServerEvent(JSON.parse(ev.data)) } catch {} }
+          setupSSE()
         } else if (s && s.phase === 'winner' && typeof s.winnerIndex === 'number') {
           // Vis serverstyret winner-popup og nedtælling for nye besøgende
           const idx = s.winnerIndex as number
@@ -231,24 +257,19 @@ export default function Home() {
           }
           setShowLoadingPopup(false)
           // attach SSE for videre events (fx ny snapshot)
-          if (sseRef.current) { try { sseRef.current.close() } catch {} }
-          sseRef.current = new EventSource('/api/stream')
-          sseRef.current.onmessage = (ev) => { try { handleServerEvent(JSON.parse(ev.data)) } catch {} }
+          setupSSE()
         } else {
           // Ingen runde kører → bed server starte serverflow og attach SSE
           try { await fetch('/api/round/ensure', { cache: 'no-store' }) } catch {}
-          if (sseRef.current) { try { sseRef.current.close() } catch {} }
-          sseRef.current = new EventSource('/api/stream')
-          sseRef.current.onmessage = (ev) => { try { handleServerEvent(JSON.parse(ev.data)) } catch {} }
+          setupSSE()
         }
       } catch {
         // Fallback: prøv at sikre serverflow og lyt
         try { await fetch('/api/round/ensure', { cache: 'no-store' }) } catch {}
-        if (sseRef.current) { try { sseRef.current.close() } catch {} }
-        sseRef.current = new EventSource('/api/stream')
+        setupSSE()
       }
     })()
-  }, [])
+  }, [handleServerEvent])
 
 
 
