@@ -13,4 +13,6 @@ services:
         value: 1200
       - key: TICK_INTERVAL_MS
         value: 15
+      - key: DATABASE_URL
+        value: set-in-dashboard
     autoDeploy: true

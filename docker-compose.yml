@@ -11,6 +11,7 @@ services:
       - PORT=8080
       - FIGHTS_PER_TICK=${FIGHTS_PER_TICK:-1200}
       - TICK_INTERVAL_MS=${TICK_INTERVAL_MS:-15}
+      - DATABASE_URL=${DATABASE_URL}
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/api/round/state"]

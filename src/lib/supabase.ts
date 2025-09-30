@@ -1,11 +1,24 @@
-import { createClient } from '@supabase/supabase-js'
+import { Pool, Client } from 'pg'
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
+const databaseUrl = process.env.DATABASE_URL || ''
 
-export const supabase = supabaseUrl && supabaseAnonKey 
-  ? createClient(supabaseUrl, supabaseAnonKey)
-  : null
+let db: { query: (text: string, params?: any[]) => Promise<any> } | null = null
+if (databaseUrl) {
+  try {
+    const host = new URL(databaseUrl).host
+    const isPooler = host.includes('-pooler.')
+    if (isPooler) {
+      const client = new Client({ connectionString: databaseUrl, ssl: { rejectUnauthorized: false } })
+      // Establish one shared connection when using Neon pooler endpoint
+      client.connect().catch((err: unknown) => console.error('[DB] Client connect error:', err))
+      db = client
+    } else {
+      db = new Pool({ connectionString: databaseUrl, ssl: { rejectUnauthorized: false } })
+    }
+  } catch (e) {
+    console.error('[DB] Invalid DATABASE_URL:', e)
+  }
+}
 
 export interface WinnerRecord {
   id?: number
@@ -19,59 +32,52 @@ export interface WinnerRecord {
 }
 
 export async function saveWinner(winner: WinnerRecord) {
-  if (!supabase) {
-    console.warn('[Supabase] Not configured, skipping save')
+  if (!db) {
+    console.warn('[DB] Not configured, skipping save')
     return null
   }
   
   try {
-    const { data, error } = await supabase
-      .from('winners')
-      .insert({
-        round: winner.round,
-        address: winner.address,
-        fees: winner.fees,
-        tx_signature: winner.tx_signature,
-        color: winner.color,
-        pixels: winner.pixels
-      })
-      .select()
-      .single()
-    
-    if (error) {
-      console.error('[Supabase] Error saving winner:', error)
-      return null
-    }
-    
-    console.log('[Supabase] Winner saved:', data)
-    return data
-  } catch (err) {
-    console.error('[Supabase] Exception saving winner:', err)
+    const insertSql = `
+      INSERT INTO winners (round, address, fees, tx_signature, color, pixels)
+      VALUES ($1, $2, $3, $4, $5, $6)
+      RETURNING id, round, address, fees, tx_signature, color, pixels, created_at
+    `
+    const values = [
+      winner.round,
+      winner.address,
+      winner.fees,
+      winner.tx_signature,
+      winner.color,
+      winner.pixels
+    ]
+    const result = await db.query(insertSql, values)
+    const row = result.rows[0]
+    console.log('[DB] Winner saved:', row)
+    return row
+  } catch (err: unknown) {
+    console.error('[DB] Exception saving winner:', err)
     return null
   }
 }
 
 export async function getRecentWinners(limit: number = 10): Promise<WinnerRecord[]> {
-  if (!supabase) {
-    console.warn('[Supabase] Not configured, returning empty array')
+  if (!db) {
+    console.warn('[DB] Not configured, returning empty array')
     return []
   }
   
   try {
-    const { data, error } = await supabase
-      .from('winners')
-      .select('*')
-      .order('created_at', { ascending: false })
-      .limit(limit)
-    
-    if (error) {
-      console.error('[Supabase] Error fetching winners:', error)
-      return []
-    }
-    
-    return data || []
-  } catch (err) {
-    console.error('[Supabase] Exception fetching winners:', err)
+    const selectSql = `
+      SELECT id, round, address, fees::float8 AS fees, tx_signature, color, pixels, created_at
+      FROM winners
+      ORDER BY created_at DESC
+      LIMIT $1
+    `
+    const result = await db.query(selectSql, [limit])
+    return result.rows as WinnerRecord[]
+  } catch (err: unknown) {
+    console.error('[DB] Exception fetching winners:', err)
     return []
   }
 }
