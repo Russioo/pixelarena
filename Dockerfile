@@ -1,7 +1,7 @@
 FROM node:20-alpine
 
-# Install curl for healthcheck
-RUN apk add --no-cache curl
+# Install curl for healthcheck, Python 3 og pip
+RUN apk add --no-cache curl python3 py3-pip
 
 WORKDIR /app
 
@@ -10,6 +10,10 @@ COPY package.json package-lock.json ./
 
 # Install ALL dependencies (including dev dependencies for build)
 RUN npm ci
+
+# Copy Python requirements og installer dependencies
+COPY requirements.txt ./
+RUN pip3 install --no-cache-dir -r requirements.txt --break-system-packages
 
 # Copy source code
 COPY . .

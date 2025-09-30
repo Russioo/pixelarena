@@ -3,9 +3,56 @@ import { Connection, Keypair, PublicKey, VersionedTransaction, SystemProgram, Tr
 import bs58 from 'bs58'
 import axios from 'axios'
 import { getLatestPendingWinner, updateWinnerPayout } from '@/lib/supabase'
+import { spawn } from 'child_process'
+import * as path from 'path'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
+
+// Helper function til at køre Python script
+async function runPythonClaim(): Promise<any> {
+  return new Promise((resolve, reject) => {
+    const pythonScript = path.join(process.cwd(), 'claim_creator_fees.py')
+    // Brug python3 (Alpine Linux) eller python (Windows)
+    const pythonCmd = process.platform === 'win32' ? 'python' : 'python3'
+    const python = spawn(pythonCmd, [pythonScript])
+    
+    let stdout = ''
+    let stderr = ''
+    
+    python.stdout.on('data', (data) => {
+      const output = data.toString()
+      console.log('[Python]', output)
+      stdout += output
+    })
+    
+    python.stderr.on('data', (data) => {
+      const error = data.toString()
+      console.error('[Python Error]', error)
+      stderr += error
+    })
+    
+    python.on('close', (code) => {
+      if (code !== 0) {
+        reject(new Error(`Python script exited with code ${code}: ${stderr}`))
+        return
+      }
+      
+      // Parse JSON result fra Python output
+      const jsonMatch = stdout.match(/JSON_RESULT:(.+)/)
+      if (jsonMatch) {
+        try {
+          const result = JSON.parse(jsonMatch[1])
+          resolve(result)
+        } catch (e) {
+          reject(new Error('Failed to parse Python JSON output'))
+        }
+      } else {
+        reject(new Error('No JSON result found in Python output'))
+      }
+    })
+  })
+}
 
 export async function POST() {
   try {
@@ -20,173 +67,28 @@ export async function POST() {
     }
 
     console.log('[Claim] ============================================================')
-    console.log('[Claim] PUMP.FUN CREATOR FEE CLAIMER')
+    console.log('[Claim] BRUGER PYTHON SCRIPT TIL AT CLAIME FEES')
     console.log('[Claim] ============================================================')
-    console.log('[Claim] Wallet:', `${pubStr.substring(0, 8)}...${pubStr.substring(pubStr.length - 8)}`)
+
+    // Kør Python claim script
+    const pythonResult = await runPythonClaim()
+    
+    if (!pythonResult.success) {
+      return NextResponse.json({ error: pythonResult.error }, { status: 500 })
+    }
 
     const connection = new Connection(rpc, 'confirmed')
     const pubkey = new PublicKey(pubStr)
     const keypair = Keypair.fromSecretKey(bs58.decode(secStr))
-
-    // Helper: robust getBalance med fallback til JSON-RPC hvis web3 fetch fejler
-    const robustGetBalance = async (account: PublicKey): Promise<number> => {
-      try {
-        return await connection.getBalance(account, 'confirmed')
-      } catch (err) {
-        try {
-          const payload = { jsonrpc: '2.0', id: 1, method: 'getBalance', params: [account.toBase58(), { commitment: 'confirmed' }] }
-          const { data } = await axios.post(rpc, payload, { timeout: 10000, headers: { 'Content-Type': 'application/json' } })
-          if (data && data.result && typeof data.result.value === 'number') return data.result.value
-          throw new Error('RPC getBalance (axios) invalid response')
-        } catch (inner) {
-          // Sidste forsøg: processed commitment
-          try {
-            const payload2 = { jsonrpc: '2.0', id: 1, method: 'getBalance', params: [account.toBase58(), { commitment: 'processed' }] }
-            const { data: data2 } = await axios.post(rpc, payload2, { timeout: 10000, headers: { 'Content-Type': 'application/json' } })
-            if (data2 && data2.result && typeof data2.result.value === 'number') return data2.result.value
-          } catch {}
-          throw new Error(`failed to get balance of account ${account.toBase58()}: ${String((inner as Error)?.message || inner)}`)
-        }
-      }
-    }
-
-    // Tjek balance FØR claim
-    console.log('[Claim] Tjekker wallet balance FØR claim...')
-    const beforeLamports = await robustGetBalance(pubkey)
-    console.log('[Claim] Balance foer claim:', (beforeLamports / 1e9).toFixed(9), 'SOL')
-
-    // Claim fees
-    console.log('[Claim] Claimer creator fees...')
     
-    // Hent prebuildet tx fra PumpPortal (samme som Python script)
-    console.log('[Claim] Anmoder om collect transaction fra PumpPortal...')
-    const form = new URLSearchParams()
-    form.set('publicKey', pubkey.toBase58())
-    form.set('action', 'collectCreatorFee')
-    form.set('priorityFee', '0.000001')
+    const signature = pythonResult.signature
+    const diffLamports = pythonResult.claimed_lamports
 
-    const resp = await fetch(portal, {
-      method: 'POST',
-      body: form
-    })
-
-    console.log('[Claim] PumpPortal response status:', resp.status)
-    
-    // Hvis fejl response (ikke 200), tjek om det er pga. ingen fees
-    if (!resp.ok) {
-      const errorText = await resp.text().catch(() => '')
-      console.log('[Claim] ⚠️ PumpPortal fejl response:', errorText)
-      
-      // Parse JSON fejl hvis muligt
-      let errorObj: any = null
-      try {
-        errorObj = JSON.parse(errorText)
-      } catch {}
-      
-      // Tjek for "no fees to claim" typer fejl
-      const errorStr = errorText.toLowerCase()
-      if (errorStr.includes('simulation failed') || 
-          errorStr.includes('insufficient funds') ||
-          errorStr.includes('no fees') ||
-          (errorObj && errorObj.error && errorObj.error.toLowerCase().includes('simulation'))) {
-        console.log('[Claim] Ingen fees at claime endnu - returnerer 0')
-        return NextResponse.json({
-          signature: null,
-          claimedLamports: 0,
-          payoutLamports: 0,
-          claimedSOL: 0,
-          payoutSOL: 0,
-          payoutSignature: null,
-          winnerAddress: null,
-          message: 'No creator fees available to claim'
-        })
-      }
-      
-      return NextResponse.json({ error: `PumpPortal error ${resp.status}`, details: errorText }, { status: 500 })
-    }
-
-    // Parse transaction bytes (samme som Python: response.content)
-    console.log('[Claim] Parsing transaction bytes...')
-    const ab = await resp.arrayBuffer()
-    const buf = Buffer.from(ab)
-    console.log('[Claim] Transaction size:', buf.length, 'bytes')
-
-    // Deserialize og sign (PRÆCIS som Python script)
-    const tx = VersionedTransaction.deserialize(buf)
-    console.log('[Claim] Transaction deserialized successfully')
-    console.log('[Claim] Signing with keypair...')
-    tx.sign([keypair])
-    console.log('[Claim] Transaction signed')
-
-    // Send transaction PRÆCIST som Python script - via ren JSON RPC
-    console.log('[Claim] Sender transaction til Solana...')
-    console.log('[Claim] RPC endpoint:', rpc)
-    
-    // Serialize til base64 (præcis som Python)
-    const serializedTx = Buffer.from(tx.serialize()).toString('base64')
-    console.log('[Claim] Serialized tx length:', serializedTx.length, 'chars')
-    
-    // JSON RPC request PRÆCIST som Python scriptet
-    const sendPayload = {
-      jsonrpc: '2.0',
-      id: 1,
-      method: 'sendTransaction',
-      params: [
-        serializedTx,
-        {
-          encoding: 'base64',
-          preflightCommitment: 'confirmed'
-        }
-      ]
-    }
-    
-    const sendResponse = await axios.post(rpc, sendPayload, {
-      headers: { 'Content-Type': 'application/json' },
-      timeout: 30000
-    })
-    
-    // Tjek for fejl (vis ALLE fejl)
-    if (sendResponse.data.error) {
-      console.error('[Claim] ❌ Transaction fejl:', JSON.stringify(sendResponse.data.error, null, 2))
-      throw new Error(`Transaction fejl: ${JSON.stringify(sendResponse.data.error)}`)
-    }
-    
-    const signature = sendResponse.data.result
-    if (!signature) {
-      throw new Error('Ingen transaction signature modtaget')
-    }
-    
-    console.log('[Claim] SUCCESS! Transaction sendt!')
+    // Python scriptet har allerede claimet fees!
+    console.log('[Claim] ✅ Python script har claimet:', pythonResult.claimed_sol, 'SOL')
     console.log('[Claim] Signature:', signature)
     console.log('[Claim] Solscan:', `https://solscan.io/tx/${signature}`)
     
-    // Vent på confirmation
-    console.log('[Claim] Venter på confirmation...')
-    await connection.confirmTransaction(signature, 'confirmed')
-    console.log('[Claim] ✅ Transaction confirmed!')
-    
-    // Vent præcis 15 sekunder som Python scriptet for balance opdatering
-    console.log('[Claim] Venter 15 sekunder på balance opdatering...')
-    await new Promise(r => setTimeout(r, 15000))
-    
-    // Tjek balance efter claim
-    console.log('[Claim] Tjekker wallet balance EFTER claim...')
-    const afterLamports = await robustGetBalance(pubkey)
-    const diffLamports = Math.max(0, afterLamports - beforeLamports)
-    
-    // Output som Python scriptet
-    console.log('[Claim] ============================================================')
-    console.log('[Claim] CLAIM RESULTAT')
-    console.log('[Claim] ============================================================')
-    console.log('[Claim] Balance FOER claim: ', (beforeLamports / 1e9).toFixed(9), 'SOL')
-    console.log('[Claim] Balance EFTER claim:', (afterLamports / 1e9).toFixed(9), 'SOL')
-    console.log('[Claim] ------------------------------------------------------------')
-    if (diffLamports > 0) {
-      console.log('[Claim] Amount Claimed =', (diffLamports / 1e9).toFixed(9), 'SOL')
-    } else {
-      console.log('[Claim] Amount Claimed = 0 SOL')
-    }
-    console.log('[Claim] ============================================================')
     const payoutLamports = Math.floor(diffLamports * 0.3) // 30% til vinder
 
     // Hent den seneste pending vinder fra databasen
@@ -200,7 +102,7 @@ export async function POST() {
       
       try {
         // Tjek at der er nok balance til payout + transaction fee (~0.000005 SOL)
-        const currentBalance = await robustGetBalance(pubkey)
+        const currentBalance = await connection.getBalance(pubkey, 'confirmed')
         const txFeeReserve = 10000 // ~0.00001 SOL reserve til transaction fee
         const maxPayoutPossible = Math.max(0, currentBalance - txFeeReserve)
         
