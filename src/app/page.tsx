@@ -840,26 +840,19 @@ export default function Home() {
               {winnerInfo.address ? `${winnerInfo.address.substring(0, 6)}...${winnerInfo.address.substring(Math.max(0, winnerInfo.address.length - 4))}` : ''}
             </div>
             <div style={{ color: '#e5e7eb', marginBottom: 4, fontVariantNumeric: 'tabular-nums', fontSize: 14 }}>Started with {winnerInfo.startingPixels} px</div>
-            {winnerInfo.feesSOL > 0 && (
-              <div style={{ 
-                color: '#10b981', 
-                marginBottom: 16, 
-                fontVariantNumeric: 'tabular-nums', 
-                fontSize: 16,
-                fontWeight: 700,
-                background: 'rgba(16, 185, 129, 0.1)',
-                padding: '8px 12px',
-                borderRadius: '6px',
-                border: '1px solid rgba(16, 185, 129, 0.3)'
-              }}>
-                💰 Payout: {winnerInfo.feesSOL.toFixed(6)} SOL
-              </div>
-            )}
-            {winnerInfo.feesSOL === 0 && (
-              <div style={{ color: '#6b7280', marginBottom: 16, fontSize: 13, fontStyle: 'italic' }}>
-                Payout pending claim phase
-              </div>
-            )}
+            <div style={{ 
+              color: '#10b981', 
+              marginBottom: 16, 
+              fontVariantNumeric: 'tabular-nums', 
+              fontSize: 16,
+              fontWeight: 700,
+              background: 'rgba(16, 185, 129, 0.1)',
+              padding: '8px 12px',
+              borderRadius: '6px',
+              border: '1px solid rgba(16, 185, 129, 0.3)'
+            }}>
+              Payout: {Number(winnerInfo.feesSOL || 0).toFixed(6)} SOL
+            </div>
             <div style={{ color: '#e5e7eb', marginBottom: 6, fontSize: 14 }}>Next round starts in</div>
             <div style={{ fontSize: 36, fontWeight: 800, color: '#10b981' }}>{nextRoundCountdown}s</div>
           </div>

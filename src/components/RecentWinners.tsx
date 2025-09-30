@@ -27,7 +27,8 @@ export default function RecentWinners({ winners }: RecentWinnersProps) {
         ) : (
           winners.slice(0, 10).map((w) => {
             const short = `${w.address.substring(0, 6)}...${w.address.substring(w.address.length - 4)}`
-            const payoutSOL = (w.fees * 0.3).toFixed(4) // 30% payout
+            // fees i databasen ER allerede det udbetalte beløb (30% af claim)
+            const payoutSOL = Number.isFinite(w.fees as any) ? Number(w.fees).toFixed(6) : (0).toFixed(6)
             
             return (
               <div key={`${w.round}-${w.txSignature}`} className="winner-card">
