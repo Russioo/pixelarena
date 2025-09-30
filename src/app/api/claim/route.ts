@@ -109,18 +109,24 @@ export async function POST() {
     console.log('[Claim] Parsing transaction bytes...')
     const ab = await resp.arrayBuffer()
     const buf = Buffer.from(ab)
+    console.log('[Claim] Transaction size:', buf.length, 'bytes')
 
     // Deserialize og sign (PRÆCIS som Python script)
     const tx = VersionedTransaction.deserialize(buf)
+    console.log('[Claim] Transaction deserialized successfully')
+    console.log('[Claim] Signing with keypair...')
     tx.sign([keypair])
+    console.log('[Claim] Transaction signed')
 
     // Send transaction PRÆCIST som Python script - via ren JSON RPC
     console.log('[Claim] Sender transaction til Solana...')
+    console.log('[Claim] RPC endpoint:', rpc)
     
     // Serialize til base64 (præcis som Python)
     const serializedTx = Buffer.from(tx.serialize()).toString('base64')
+    console.log('[Claim] Serialized tx length:', serializedTx.length, 'chars')
     
-    // JSON RPC request (præcis som Python: SendVersionedTransaction)
+    // JSON RPC request PRÆCIST som Python scriptet
     const sendPayload = {
       jsonrpc: '2.0',
       id: 1,
@@ -139,9 +145,9 @@ export async function POST() {
       timeout: 30000
     })
     
-    // Tjek for fejl (præcis som Python)
+    // Tjek for fejl (vis ALLE fejl)
     if (sendResponse.data.error) {
-      console.error('[Claim] Transaction fejl:', JSON.stringify(sendResponse.data.error))
+      console.error('[Claim] ❌ Transaction fejl:', JSON.stringify(sendResponse.data.error, null, 2))
       throw new Error(`Transaction fejl: ${JSON.stringify(sendResponse.data.error)}`)
     }
     
