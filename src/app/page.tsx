@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import GameStats from '@/components/GameStats'
 import Battlefield from '@/components/Battlefield'
 import Leaderboard from '@/components/Leaderboard'
+import SystemStatus from '@/components/SystemStatus'
 import { Holder, Pixel, GameState } from '@/types/game'
 
 export default function Home() {
@@ -555,6 +556,9 @@ export default function Home() {
           </a>
         </div>
       </div>
+
+      {/* System Status Indicator */}
+      <SystemStatus />
     </div>
   )
 }
