@@ -32,8 +32,18 @@ function boot() {
       try {
         // Save winner to Supabase
         const s = getCurrentState()
+        console.log('[Engine] Winner callback triggered for index:', winnerIndex)
+        console.log('[Engine] Current state:', { roundId: s.roundId, holdersCount: s.holders?.length })
+        
         if (s.holders && s.holders[winnerIndex]) {
           const winner = s.holders[winnerIndex]
+          console.log('[Engine] Saving winner to database:', { 
+            round: s.roundId, 
+            address: winner.address, 
+            color: winner.color, 
+            pixels: winner.pixels 
+          })
+          
           saveWinner({
             round: s.roundId,
             address: winner.address,
@@ -41,18 +51,37 @@ function boot() {
             tx_signature: 'pending', // Will be updated with real tx
             color: winner.color,
             pixels: winner.pixels
-          }).catch(err => console.error('[Engine] Failed to save winner:', err))
+          })
+          .then(result => {
+            console.log('[Engine] ✅ Winner saved successfully to database:', result)
+          })
+          .catch(err => {
+            console.error('[Engine] ❌ Failed to save winner to database:', err)
+            console.error('[Engine] DATABASE_URL configured:', !!process.env.DATABASE_URL)
+          })
+        } else {
+          console.error('[Engine] ❌ Winner holder not found at index:', winnerIndex)
         }
-        startWithRealHolders()
-      } catch {}
+        
+        // Start next round
+        setTimeout(() => startWithRealHolders(), 1000)
+      } catch (e) {
+        console.error('[Engine] Exception in winner callback:', e)
+      }
     })
-  } catch {}
+  } catch (e) {
+    console.error('[Engine] Failed to setup winner callback:', e)
+  }
+  
   try {
     const s = getCurrentState()
     if (!isRunning() && s.phase === 'idle') {
+      console.log('[Engine] Starting initial round...')
       startWithRealHolders()
     }
-  } catch {}
+  } catch (e) {
+    console.error('[Engine] Failed to start initial round:', e)
+  }
 }
 
 boot()

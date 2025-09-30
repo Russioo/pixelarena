@@ -44,6 +44,8 @@ export default function Home() {
   const sseRef = useRef<EventSource | null>(null)
   const countdownRunningRef = useRef<boolean>(false)
   const snapshotHoldersRef = useRef<Holder[] | null>(null)
+  const pageVisibleRef = useRef<boolean>(true)
+  const lastSyncTimeRef = useRef<number>(Date.now())
   const DEFAULT_MINT = process.env.NEXT_PUBLIC_MINT_ADDRESS || 'DfPFV3Lt1x3818H9sHfM2aiuV5zqWM7oztQ8sSbapump'
 
   // Initialize pixels array (layout only). Server will stream real owners/colors.
@@ -59,6 +61,25 @@ export default function Home() {
     }
     setGameState(prev => ({ ...prev, pixels: initialPixels }))
   }, [gameState.totalPixels])
+
+  // Handle page visibility changes to prevent freezing when switching tabs
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      const isVisible = !document.hidden
+      pageVisibleRef.current = isVisible
+      
+      if (isVisible) {
+        // Tab became visible again - sync with server
+        console.log('[Visibility] Tab became visible, syncing with server...')
+        lastSyncTimeRef.current = Date.now()
+      } else {
+        console.log('[Visibility] Tab hidden')
+      }
+    }
+    
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange)
+  }, [])
 
   // Fetch recent winners from Supabase on mount
   useEffect(() => {

@@ -172,28 +172,35 @@ function tickOnce(): void {
     broadcast({ type: 'snapshot', tick: state.tick, startMs: state.startMs, roundId: state.roundId, pixels: state.pixels, holders: state.holders })
   }
 
-  // Winner check: only one owner remains
+  // Winner check: ONE player must own ALL pixels
   const counts: Record<number, number> = {}
   for (let i = 0; i < state.pixels.length; i++) {
     const o = state.pixels[i].owner
     if (o !== null) counts[o] = (counts[o] || 0) + 1
   }
   const owners = Object.keys(counts)
+  // Check if exactly ONE owner AND they own ALL pixels
   if (owners.length === 1) {
     const winnerIndex = parseInt(owners[0])
-    state.winnerIndex = winnerIndex
-    state.phase = 'winner'
-    state.running = false
-    state.nextRoundAt = Date.now() + 10000
-    broadcast({ type: 'winner', winnerIndex, nextRoundAt: state.nextRoundAt, holders: state.holders })
-    stop()
-    // Efter 10s (winner-visning) starter vi næste serverflow
-    try {
-      clearPhaseTimeout()
-      state.phaseTimeout = setTimeout(() => {
-        try { state.onWinner && state.onWinner(winnerIndex) } catch {}
-      }, 10000)
-    } catch {}
+    const winnerPixelCount = counts[winnerIndex]
+    
+    // CRITICAL: Winner must own ALL pixels (100% of battlefield)
+    if (winnerPixelCount === state.pixels.length) {
+      console.log(`[GameEngine] WINNER DETECTED! Player ${winnerIndex} owns all ${winnerPixelCount}/${state.pixels.length} pixels`)
+      state.winnerIndex = winnerIndex
+      state.phase = 'winner'
+      state.running = false
+      state.nextRoundAt = Date.now() + 10000
+      broadcast({ type: 'winner', winnerIndex, nextRoundAt: state.nextRoundAt, holders: state.holders })
+      stop()
+      // Efter 10s (winner-visning) starter vi næste serverflow
+      try {
+        clearPhaseTimeout()
+        state.phaseTimeout = setTimeout(() => {
+          try { state.onWinner && state.onWinner(winnerIndex) } catch {}
+        }, 10000)
+      } catch {}
+    }
   }
 }
 
