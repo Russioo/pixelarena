@@ -9,8 +9,8 @@ services:
       - "8080:8080"
     environment:
       - PORT=8080
-      - FIGHTS_PER_TICK=${FIGHTS_PER_TICK:-1200}
-      - TICK_INTERVAL_MS=${TICK_INTERVAL_MS:-15}
+      - FIGHTS_PER_TICK=${FIGHTS_PER_TICK:-6000}
+      - TICK_INTERVAL_MS=${TICK_INTERVAL_MS:-8}
       - DATABASE_URL=${DATABASE_URL}
     restart: unless-stopped
     healthcheck:
