@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: vibecodingcoin-engine
+    runtime: docker
+    region: frankfurt  # Eller oregon/singapore afhængig af din placering
+    plan: free  # Eller starter for altid-aktiv
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /api/round/state
+    envVars:
+      - key: PORT
+        value: 8080
+      - key: FIGHTS_PER_TICK
+        value: 1200
+      - key: TICK_INTERVAL_MS
+        value: 15
+    autoDeploy: true

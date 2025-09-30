@@ -53,7 +53,7 @@ let state: EngineState = {
   pixels: [],
   holders: [],
   neighbors: [],
-  fightsPerTick: 4000,
+  fightsPerTick: Math.max(200, Number(process.env.FIGHTS_PER_TICK || 1200)),
   rngState: 12345,
   tick: 0,
   interval: null,
@@ -166,8 +166,10 @@ function tickOnce(): void {
 
   state.tick++
 
-  // Broadcast snapshot
-  broadcast({ type: 'snapshot', tick: state.tick, startMs: state.startMs, roundId: state.roundId, pixels: state.pixels, holders: state.holders })
+  // Broadcast snapshot (throttled)
+  if (state.tick % 4 === 0) {
+    broadcast({ type: 'snapshot', tick: state.tick, startMs: state.startMs, roundId: state.roundId, pixels: state.pixels, holders: state.holders })
+  }
 
   // Winner check: only one owner remains
   const counts: Record<number, number> = {}
@@ -212,7 +214,8 @@ function start(params: { holders: Holder[]; seed?: number; fightsPerTick?: numbe
   state.nextPhaseAt = 0
   distributePixelsDeterministic()
   state.running = true
-  state.interval = setInterval(tickOnce, 5)
+  const tickMs = Math.max(10, Number(process.env.TICK_INTERVAL_MS || 15))
+  state.interval = setInterval(tickOnce, tickMs)
 }
 
 function stop(): void {
@@ -321,7 +324,7 @@ export function startServerFlow(params?: { holders?: Holder[]; claimMs?: number;
       clearPhaseTimeout()
       state.phaseTimeout = setTimeout(() => {
         // Start round (running)
-        start({ holders: state.holders, seed: Date.now() % 100000, fightsPerTick: 1500, width: state.width, height: state.height })
+        start({ holders: state.holders, seed: Date.now() % 100000, fightsPerTick: Math.max(200, Number(process.env.FIGHTS_PER_TICK || 1200)), width: state.width, height: state.height })
       }, startingMs)
     }, snapshotMs)
   }, claimMs)
