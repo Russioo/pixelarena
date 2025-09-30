@@ -81,20 +81,28 @@ export default function Home() {
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange)
   }, [])
 
-  // Fetch recent winners from Supabase on mount
+  // Fetch recent winners from database continuously (live data)
   useEffect(() => {
-    async function fetchWinners() {
+    const fetchWinners = async () => {
       try {
-        const response = await fetch('/api/winners')
+        const response = await fetch('/api/winners', { cache: 'no-store' })
         const data = await response.json()
         if (data.winners && Array.isArray(data.winners)) {
+          console.log('[Winners] Fetched from database:', data.winners.length, 'winners')
           setGameState(prev => ({ ...prev, recentWinners: data.winners }))
         }
       } catch (error) {
-        console.error('Failed to fetch winners:', error)
+        console.error('[Winners] Failed to fetch:', error)
       }
     }
+    
+    // Fetch immediately on mount
     fetchWinners()
+    
+    // Then poll database every 5 seconds for live updates
+    const interval = setInterval(fetchWinners, 5000)
+    
+    return () => clearInterval(interval)
   }, [])
 
   // No local color generation needed here; server provides colors
@@ -128,27 +136,9 @@ export default function Home() {
           setWinnerClosing(false)
           setShowWinnerPopup(true)
           
-          // Tilføj winner til recent winners med fake TX (indtil rigtig payout er implementeret)
-          const fakeSignature = Array.from({ length: 88 }, () => 
-            '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz'[Math.floor(Math.random() * 58)]
-          ).join('')
-          
-          const feesInSOL = typeof data.feesPoolLamports === 'number' ? data.feesPoolLamports / 1e9 : 0
-          
-          setGameState(prev => ({
-            ...prev,
-            recentWinners: [
-              {
-                round: prev.currentRound,
-                address: winnerHolder.address,
-                fees: feesInSOL,
-                txSignature: fakeSignature,
-                color: winnerHolder.color,
-                pixels: Math.max(0, Math.floor(winnerHolder.pixels || 0))
-              },
-              ...prev.recentWinners
-            ].slice(0, 20) // Keep max 20 winners
-          }))
+          // Winner will be saved to database by server
+          // Frontend will automatically fetch it from database via polling (every 5s)
+          console.log('[Winner] Winner detected, database will be updated by server')
           
           if (!countdownRunningRef.current) {
             countdownRunningRef.current = true
