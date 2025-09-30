@@ -18,12 +18,12 @@ You need to deploy the Docker container to a cloud service. Here are some recomm
 2. Click "New +" → "Web Service"
 3. Connect your GitHub repository
 4. Configuration:
-   - **Name**: `vibecodingcoin-engine`
+   - **Name**: `pixel-arena-engine`
    - **Environment**: `Docker`
    - **Instance Type**: `Free` (or `Starter` for better performance)
    - **Health Check Path**: `/api/round/state`
 5. Click "Create Web Service"
-6. Copy the URL (e.g. `https://vibecodingcoin-engine.onrender.com`)
+6. Copy the URL (e.g. `https://pixel-arena-engine.onrender.com`)
 
 ### Option B: Railway.app
 
@@ -49,7 +49,7 @@ You need to deploy the Docker container to a cloud service. Here are some recomm
 ```bash
 # On your server
 git clone <your-repo>
-cd vibecodingcoin
+cd pixel-arena
 
 # Build and run Docker container
 docker-compose up -d
@@ -64,7 +64,7 @@ docker-compose up -d
 2. Go to "Settings" → "Environment Variables"
 3. Add the following variable:
    - **Key**: `ENGINE_URL`
-   - **Value**: URL from Step 1 (e.g. `https://vibecodingcoin-engine.onrender.com`)
+   - **Value**: URL from Step 1 (e.g. `https://pixel-arena-engine.onrender.com`)
    - **Environments**: Select "Production", "Preview", and "Development"
 4. Click "Save"
 

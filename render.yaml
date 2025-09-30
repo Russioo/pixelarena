@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: vibecodingcoin-engine
+    name: pixel-arena-engine
     runtime: docker
     region: frankfurt  # Eller oregon/singapore afhængig af din placering
     plan: free  # Eller starter for altid-aktiv

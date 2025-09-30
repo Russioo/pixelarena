@@ -1,4 +1,4 @@
-# 🪙 Pixel Arena – VibeCoding Coin Pixel Battle
+# 🪙 Pixel Arena
 
 A simple pixel battle game where the largest holders of your Solana PumpFun coin fight for board dominance – built with Next.js and TypeScript.
 

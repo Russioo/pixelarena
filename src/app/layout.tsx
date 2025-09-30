@@ -5,8 +5,8 @@ import { Inter } from 'next/font/google'
 const inter = Inter({ subsets: ['latin'], display: 'swap' })
 
 export const metadata: Metadata = {
-  title: 'VibeCoding Coin Pixel Battle',
-  description: 'A fast pixel-battle where the top 100 Solana PumpFun holders fight for dominance',
+  title: 'Pixel Arena',
+  description: 'Pixel Arena – et hurtigt pixel-battle hvor top PumpFun holders kæmper om brættet',
 }
 
 export default function RootLayout({
