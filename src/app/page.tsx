@@ -5,6 +5,7 @@ import GameStats from '@/components/GameStats'
 import Battlefield from '@/components/Battlefield'
 import Leaderboard from '@/components/Leaderboard'
 import SystemStatus from '@/components/SystemStatus'
+import RecentWinners from '@/components/RecentWinners'
 import { Holder, Pixel, GameState } from '@/types/game'
 
 export default function Home() {
@@ -447,6 +448,11 @@ export default function Home() {
             <Leaderboard holders={[...liveHolders].sort((a, b) => b.pixels - a.pixels)} />
           </div>
         </div>
+
+        {/* Recent Winners */}
+        <div className="recent-winners-section">
+          <RecentWinners winners={gameState.recentWinners} />
+        </div>
       </div>
 
       {/* Responsive Styles */}
@@ -518,6 +524,10 @@ export default function Home() {
           box-shadow: 0 4px 20px rgba(0,0,0,0.3);
         }
 
+        .recent-winners-section {
+          margin-top: 20px;
+        }
+
         /* Tablets og mindre desktops (≤1400px) */
         @media (max-width: 1400px) {
           .page-container {
@@ -540,6 +550,10 @@ export default function Home() {
 
           .leaderboard-container {
             height: calc(100vh - 130px);
+          }
+
+          .recent-winners-section {
+            margin-top: 16px;
           }
         }
 
@@ -574,6 +588,10 @@ export default function Home() {
           .leaderboard-container {
             height: 500px;
           }
+
+          .recent-winners-section {
+            margin-top: 16px;
+          }
         }
 
         /* Tablet (≤768px) */
@@ -602,6 +620,10 @@ export default function Home() {
 
           .leaderboard-container {
             height: 400px;
+          }
+
+          .recent-winners-section {
+            margin-top: 12px;
           }
         }
 
@@ -643,6 +665,10 @@ export default function Home() {
 
           .leaderboard-container {
             height: 350px;
+          }
+
+          .recent-winners-section {
+            margin-top: 8px;
           }
         }
 
