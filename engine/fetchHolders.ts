@@ -80,7 +80,7 @@ async function fetchRealHolders(tokenAddress: string): Promise<TokenHolder[]> {
     })
 
     if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`)
-    const data = await response.json()
+    const data: any = await response.json()
     if (data.error) throw new Error(data.error.message)
 
     type ParsedAccount = {
@@ -99,7 +99,7 @@ async function fetchRealHolders(tokenAddress: string): Promise<TokenHolder[]> {
 
     const mapOwnerToBalance = new Map<string, number>()
     const mapOwnerToAccountCount = new Map<string, number>()
-    const accounts: ParsedAccount[] = data.result || []
+    const accounts: ParsedAccount[] = (data as any).result || []
     
     console.log(`[Holders] Found ${accounts.length} token accounts`)
     
