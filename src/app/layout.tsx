@@ -6,7 +6,7 @@ const inter = Inter({ subsets: ['latin'], display: 'swap' })
 
 export const metadata: Metadata = {
   title: 'Pixel Arena',
-  description: 'Pixel Arena – et hurtigt pixel-battle hvor top PumpFun holders kæmper om brættet',
+  description: 'Top 100 holders battle to the death. Your tokens become fighting pixels. Last one standing wins the pool.',
 }
 
 export default function RootLayout({
