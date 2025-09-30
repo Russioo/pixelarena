@@ -321,12 +321,10 @@ export function startServerFlow(params?: { holders?: Holder[]; claimMs?: number;
   ;(async () => {
     try {
       console.log('[GameEngine] 🎯 Starting claim process...')
-      // Brug intern URL på server-side for at undgå networking problemer på Render
-      const port = process.env.PORT || 3000
-      const baseUrl = process.env.NODE_ENV === 'production' 
-        ? `http://localhost:${port}` 
-        : (process.env.APP_URL || 'http://localhost:3000')
-      const claimUrl = `${baseUrl.replace(/\/$/, '')}/api/claim`
+      // Kald ALTID engine'ens eget API (lokalt) så Python kan køre i containeren
+      const port = Number(process.env.PORT || 8080)
+      const engineBaseUrl = `http://localhost:${port}`
+      const claimUrl = `${engineBaseUrl}/api/claim`
       console.log('[GameEngine] Claim URL:', claimUrl)
       
       const response = await fetch(claimUrl, { 
