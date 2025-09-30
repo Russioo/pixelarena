@@ -82,3 +82,49 @@ export async function getRecentWinners(limit: number = 10): Promise<WinnerRecord
   }
 }
 
+export async function getLatestPendingWinner(): Promise<WinnerRecord | null> {
+  if (!db) {
+    console.warn('[DB] Not configured, returning null')
+    return null
+  }
+  
+  try {
+    const selectSql = `
+      SELECT id, round, address, fees::float8 AS fees, tx_signature, color, pixels, created_at
+      FROM winners
+      WHERE tx_signature = 'pending'
+      ORDER BY created_at DESC
+      LIMIT 1
+    `
+    const result = await db.query(selectSql, [])
+    if (result.rows.length === 0) return null
+    return result.rows[0] as WinnerRecord
+  } catch (err: unknown) {
+    console.error('[DB] Exception fetching pending winner:', err)
+    return null
+  }
+}
+
+export async function updateWinnerPayout(winnerId: number, fees: number, txSignature: string) {
+  if (!db) {
+    console.warn('[DB] Not configured, skipping update')
+    return null
+  }
+  
+  try {
+    const updateSql = `
+      UPDATE winners
+      SET fees = $1, tx_signature = $2
+      WHERE id = $3
+      RETURNING id, round, address, fees, tx_signature, color, pixels, created_at
+    `
+    const result = await db.query(updateSql, [fees, txSignature, winnerId])
+    if (result.rows.length === 0) return null
+    console.log('[DB] Winner payout updated:', result.rows[0])
+    return result.rows[0]
+  } catch (err: unknown) {
+    console.error('[DB] Exception updating winner payout:', err)
+    return null
+  }
+}
+

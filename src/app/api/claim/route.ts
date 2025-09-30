@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server'
-import { Connection, Keypair, PublicKey, VersionedTransaction } from '@solana/web3.js'
+import { Connection, Keypair, PublicKey, VersionedTransaction, SystemProgram, Transaction } from '@solana/web3.js'
 import bs58 from 'bs58'
 import axios from 'axios'
+import { getLatestPendingWinner, updateWinnerPayout } from '@/lib/supabase'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -104,12 +105,69 @@ export async function POST() {
     const diffLamports = Math.max(0, afterLamports - beforeLamports)
     const payoutLamports = Math.floor(diffLamports * 0.3) // 30% til vinder
 
+    // Hent den seneste pending vinder fra databasen
+    const winner = await getLatestPendingWinner()
+    
+    let payoutSignature: string | null = null
+    if (winner && payoutLamports > 0) {
+      console.log(`[Claim] Sender ${payoutLamports / 1e9} SOL (30% af ${diffLamports / 1e9} SOL) til vinder: ${winner.address}`)
+      
+      try {
+        // Send 30% af det claimede beløb til vinderen
+        const recipientPubkey = new PublicKey(winner.address)
+        
+        // Hent recent blockhash
+        const { blockhash } = await connection.getLatestBlockhash('confirmed')
+        
+        // Lav transfer instruction
+        const transferInstruction = SystemProgram.transfer({
+          fromPubkey: keypair.publicKey,
+          toPubkey: recipientPubkey,
+          lamports: payoutLamports
+        })
+        
+        // Lav transaction
+        const transaction = new Transaction().add(transferInstruction)
+        transaction.recentBlockhash = blockhash
+        transaction.feePayer = keypair.publicKey
+        
+        // Signer transaction
+        transaction.sign(keypair)
+        
+        // Send transaction
+        payoutSignature = await connection.sendRawTransaction(transaction.serialize(), {
+          skipPreflight: false,
+          preflightCommitment: 'confirmed'
+        })
+        
+        // Vent på confirmation
+        await connection.confirmTransaction(payoutSignature, 'confirmed')
+        
+        console.log(`[Claim] ✅ Payout sendt! Signature: ${payoutSignature}`)
+        
+        // Opdater database med fees og tx signature
+        await updateWinnerPayout(winner.id!, payoutLamports / 1e9, payoutSignature)
+        
+      } catch (payoutError: any) {
+        console.error('[Claim] ❌ Fejl ved payout til vinder:', payoutError)
+        // Fortsæt selvom payout fejler - claimen var succesfuld
+      }
+    } else {
+      if (!winner) {
+        console.log('[Claim] Ingen pending vinder fundet - skipper payout')
+      } else if (payoutLamports === 0) {
+        console.log('[Claim] Ingen fees claimet - skipper payout')
+      }
+    }
+
     return NextResponse.json({
       signature,
       claimedLamports: diffLamports,
       payoutLamports,
       claimedSOL: diffLamports / 1e9,
-      payoutSOL: payoutLamports / 1e9
+      payoutSOL: payoutLamports / 1e9,
+      payoutSignature,
+      winnerAddress: winner?.address || null
     })
   } catch (e: any) {
     return NextResponse.json({ error: e?.message || 'claim failed' }, { status: 500 })

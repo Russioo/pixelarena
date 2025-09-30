@@ -18,11 +18,12 @@ app.use(cors())
 async function startWithRealHolders() {
   try {
     const holders = await fetchHolders()
-    console.log(`[Engine] Starting server flow with ${holders.length} holders`)
+    console.log(`[Engine] ✅ Starting server flow with ${holders.length} real holders`)
     startServerFlow({ holders })
   } catch (error) {
-    console.error('[Engine] Failed to fetch holders, starting with defaults:', error)
-    startServerFlow()
+    console.error('[Engine] ❌ Failed to fetch holders - MINT_ADDRESS mangler eller RPC fejl:', error)
+    console.error('[Engine] ❌ Spillet starter IKKE. Tilføj MINT_ADDRESS i .env')
+    // Spillet starter IKKE uden rigtige holders
   }
 }
 

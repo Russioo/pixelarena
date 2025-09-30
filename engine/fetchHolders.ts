@@ -159,34 +159,22 @@ async function fetchRealHolders(tokenAddress: string): Promise<TokenHolder[]> {
   }
 }
 
-function generateMockHolders(): TokenHolder[] {
-  console.log('[Holders] Using mock/test holders (100 players)')
-  const total = 100
-  const base = Math.floor(2500 / total)
-  return Array.from({ length: total }, (_, i) => ({
-    address: `HOLDER_${i.toString().padStart(3,'0')}`,
-    balance: 1,
-    percentage: 1,
-    pixels: base,
-    color: `hsl(${Math.round((i * 360) / total)}, 80%, 50%)`
-  }))
-}
-
 export async function fetchHolders(): Promise<TokenHolder[]> {
   const mintAddress = process.env.MINT_ADDRESS
   
   if (!mintAddress || mintAddress.trim().length === 0) {
-    console.warn('[Holders] No MINT_ADDRESS configured, using mock holders')
-    return generateMockHolders()
+    console.error('[Holders] ❌ MINT_ADDRESS er ikke konfigureret! Spillet kan ikke starte.')
+    throw new Error('MINT_ADDRESS mangler - tilføj den i .env filen')
   }
 
   console.log(`[Holders] MINT_ADDRESS configured: ${mintAddress}`)
   const realHolders = await fetchRealHolders(mintAddress)
   
   if (realHolders.length === 0) {
-    console.warn('[Holders] Failed to fetch real holders, falling back to mock')
-    return generateMockHolders()
+    console.error('[Holders] ❌ Kunne ikke hente holders fra blockchain. Check MINT_ADDRESS og RPC forbindelse.')
+    throw new Error('Ingen holders fundet - check MINT_ADDRESS og RPC')
   }
   
+  console.log(`[Holders] ✅ Successfully fetched ${realHolders.length} real holders`)
   return realHolders
 }

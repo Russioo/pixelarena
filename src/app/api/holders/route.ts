@@ -181,36 +181,8 @@ async function fetchHeliusHolders(tokenAddress: string): Promise<TokenHolder[]> 
     return top
   } catch (error) {
     console.error('Error fetching holders from RPC:', error)
-    return generateMockHolders()
+    throw error
   }
-}
-
-function generateMockAddress(): string {
-  const chars = 'ABCDEFGHJKMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz123456789'
-  let address = ''
-  for (let i = 0; i < 44; i++) address += chars.charAt(Math.floor(Math.random() * chars.length))
-  return address
-}
-
-function generateMockHolders(): TokenHolder[] {
-  console.log('Genererer mock holder data...')
-  const mockHolders: TokenHolder[] = []
-  const totalSupply = 1000000000
-  for (let i = 0; i < 100; i++) {
-    const baseBalance = Math.pow(0.95, i) * (totalSupply * 0.1)
-    const randomFactor = 0.8 + Math.random() * 0.4
-    const balance = baseBalance * randomFactor
-    const holder: TokenHolder = {
-      address: generateMockAddress(),
-      balance,
-      percentage: (balance / totalSupply) * 100,
-      pixels: 0,
-      color: generatePlayerColor(`holder_${i}`)
-    }
-    holder.pixels = calculatePixelsForHolder(holder.percentage)
-    mockHolders.push(holder)
-  }
-  return mockHolders.sort((a, b) => b.balance - a.balance)
 }
 
 export async function POST(request: NextRequest) {

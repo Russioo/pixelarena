@@ -40,6 +40,8 @@ export default function Home() {
   const [roundStartClosing, setRoundStartClosing] = useState(false)
   const [roundTimer, setRoundTimer] = useState('00:00')
   const [showLoadingPopup, setShowLoadingPopup] = useState(true)
+  const [showMintErrorPopup, setShowMintErrorPopup] = useState(false)
+  const [mintErrorMessage, setMintErrorMessage] = useState('')
   const timerIntervalRef = useRef<NodeJS.Timeout | null>(null)
   const sseRef = useRef<EventSource | null>(null)
   const countdownRunningRef = useRef<boolean>(false)
@@ -277,6 +279,15 @@ export default function Home() {
         const stateUrl = base ? `${base.replace(/\/$/, '')}/api/round/state` : '/api/round/state'
         const res = await fetch(stateUrl, { cache: 'no-store' })
         const s = res.ok ? await res.json() : null
+        
+        // Check hvis der mangler MINT_ADDRESS eller ingen holders
+        if (s && (!s.holders || s.holders.length === 0) && s.phase === 'idle') {
+          setMintErrorMessage('MINT_ADDRESS mangler i .env - Spillet kan ikke starte')
+          setShowMintErrorPopup(true)
+          setShowLoadingPopup(false)
+          return
+        }
+        
         const running = !!(s && s.running)
         
         if (running) {
@@ -315,12 +326,31 @@ export default function Home() {
           setupSSE()
         } else {
           // Ingen runde kører → bed server starte serverflow og attach SSE
-          try { await fetch('/api/round/ensure', { cache: 'no-store' }) } catch {}
+          try { 
+            const ensureRes = await fetch('/api/round/ensure', { cache: 'no-store' })
+            if (!ensureRes.ok) {
+              setMintErrorMessage('Kunne ikke starte spillet - mangler MINT_ADDRESS i .env')
+              setShowMintErrorPopup(true)
+              setShowLoadingPopup(false)
+              return
+            }
+          } catch (err) {
+            console.error('[Setup] Failed to ensure round:', err)
+          }
           setupSSE()
         }
-      } catch {
+      } catch (err) {
+        console.error('[Setup] Error during initialization:', err)
         // Fallback: prøv at sikre serverflow og lyt
-        try { await fetch('/api/round/ensure', { cache: 'no-store' }) } catch {}
+        try { 
+          const ensureRes = await fetch('/api/round/ensure', { cache: 'no-store' })
+          if (!ensureRes.ok) {
+            setMintErrorMessage('Spillet kunne ikke starte - check MINT_ADDRESS i .env')
+            setShowMintErrorPopup(true)
+            setShowLoadingPopup(false)
+            return
+          }
+        } catch {}
         setupSSE()
       }
     })()
@@ -846,6 +876,46 @@ export default function Home() {
             </div>
             <div style={{ color: '#9aa1ac', marginBottom: 14, fontSize: 14 }}>Fetching top 100 holders…</div>
             <div style={{ fontSize: 36, fontWeight: 800, color: '#60a5fa' }}>{snapshotCountdown}s</div>
+          </div>
+        </div>
+      )}
+
+      {/* Mint Error Modal (KRITISK FEJL) */}
+      {showMintErrorPopup && (
+        <div className="modal-backdrop" style={{ zIndex: 1200 }}>
+          <div className="modal-card" style={{ borderColor: '#ef4444', maxWidth: '500px' }}>
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="12" cy="12" r="10" stroke="#ef4444" strokeWidth="2"/>
+                <path d="M12 8v4M12 16h.01" stroke="#ef4444" strokeWidth="2" strokeLinecap="round"/>
+              </svg>
+              <div style={{ fontWeight: 800, letterSpacing: 0.4, fontSize: 18, color: '#ef4444' }}>Konfigurationsfejl</div>
+            </div>
+            <div style={{ color: '#e5e7eb', marginBottom: 16, fontSize: 15, lineHeight: 1.6 }}>
+              {mintErrorMessage}
+            </div>
+            <div style={{ color: '#9aa1ac', fontSize: 13, lineHeight: 1.5, textAlign: 'left', background: '#1a1d24', padding: '12px', borderRadius: '8px', fontFamily: 'monospace' }}>
+              <div style={{ marginBottom: 8, fontWeight: 700 }}>Løsning:</div>
+              1. Åbn .env filen<br/>
+              2. Tilføj: MINT_ADDRESS=din-token-mint-adresse<br/>
+              3. Genstart Docker serveren
+            </div>
+            <button 
+              onClick={() => window.location.reload()} 
+              style={{ 
+                marginTop: 16, 
+                padding: '10px 20px', 
+                background: '#ef4444', 
+                color: 'white', 
+                border: 'none', 
+                borderRadius: '8px', 
+                fontWeight: 700, 
+                cursor: 'pointer',
+                fontSize: '14px'
+              }}
+            >
+              Genindlæs siden
+            </button>
           </div>
         </div>
       )}
