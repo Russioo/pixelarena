@@ -304,7 +304,7 @@ export default function Home() {
         
         // Check hvis der mangler MINT_ADDRESS eller ingen holders
         if (s && (!s.holders || s.holders.length === 0) && s.phase === 'idle') {
-          setMintErrorMessage('MINT_ADDRESS mangler i .env - Spillet kan ikke starte')
+          setMintErrorMessage('Game is starting for everyone – give it a second!')
           setShowMintErrorPopup(true)
           setShowLoadingPopup(false)
           return
@@ -351,7 +351,7 @@ export default function Home() {
           try { 
             const ensureRes = await fetch('/api/round/ensure', { cache: 'no-store' })
             if (!ensureRes.ok) {
-              setMintErrorMessage('Kunne ikke starte spillet - mangler MINT_ADDRESS i .env')
+              setMintErrorMessage('Game is starting for everyone – give it a second!')
               setShowMintErrorPopup(true)
               setShowLoadingPopup(false)
               return
@@ -915,7 +915,7 @@ export default function Home() {
         </div>
       )}
 
-      {/* Mint Error Modal (KRITISK FEJL) */}
+      {/* Mint/Error Modal (friendly startup message) */}
       {showMintErrorPopup && (
         <div className="modal-backdrop" style={{ zIndex: 1200 }}>
           <div className="modal-card" style={{ borderColor: '#ef4444', maxWidth: '500px' }}>
@@ -924,17 +924,12 @@ export default function Home() {
                 <circle cx="12" cy="12" r="10" stroke="#ef4444" strokeWidth="2"/>
                 <path d="M12 8v4M12 16h.01" stroke="#ef4444" strokeWidth="2" strokeLinecap="round"/>
               </svg>
-              <div style={{ fontWeight: 800, letterSpacing: 0.4, fontSize: 18, color: '#ef4444' }}>Konfigurationsfejl</div>
+              <div style={{ fontWeight: 800, letterSpacing: 0.4, fontSize: 18, color: '#ef4444' }}>Please wait</div>
             </div>
             <div style={{ color: '#e5e7eb', marginBottom: 16, fontSize: 15, lineHeight: 1.6 }}>
               {mintErrorMessage}
             </div>
-            <div style={{ color: '#9aa1ac', fontSize: 13, lineHeight: 1.5, textAlign: 'left', background: '#1a1d24', padding: '12px', borderRadius: '8px', fontFamily: 'monospace' }}>
-              <div style={{ marginBottom: 8, fontWeight: 700 }}>Løsning:</div>
-              1. Åbn .env filen<br/>
-              2. Tilføj: MINT_ADDRESS=din-token-mint-adresse<br/>
-              3. Genstart Docker serveren
-            </div>
+            {/* No steps shown to end users; keep copy simple */}
             <button 
               onClick={() => window.location.reload()} 
               style={{ 
