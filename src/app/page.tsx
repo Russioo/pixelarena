@@ -918,13 +918,13 @@ export default function Home() {
       {/* Mint/Error Modal (friendly startup message) */}
       {showMintErrorPopup && (
         <div className="modal-backdrop" style={{ zIndex: 1200 }}>
-          <div className="modal-card" style={{ borderColor: '#ef4444', maxWidth: '500px' }}>
+          <div className="modal-card" style={{ borderColor: '#60a5fa', maxWidth: '500px' }}>
             <div style={{ display: 'inline-flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <circle cx="12" cy="12" r="10" stroke="#ef4444" strokeWidth="2"/>
-                <path d="M12 8v4M12 16h.01" stroke="#ef4444" strokeWidth="2" strokeLinecap="round"/>
+                <circle cx="12" cy="12" r="10" stroke="#60a5fa" strokeWidth="2"/>
+                <path d="M12 8v4M12 16h.01" stroke="#60a5fa" strokeWidth="2" strokeLinecap="round"/>
               </svg>
-              <div style={{ fontWeight: 800, letterSpacing: 0.4, fontSize: 18, color: '#ef4444' }}>Please wait</div>
+              <div style={{ fontWeight: 800, letterSpacing: 0.4, fontSize: 18, color: '#60a5fa' }}>Please wait</div>
             </div>
             <div style={{ color: '#e5e7eb', marginBottom: 16, fontSize: 15, lineHeight: 1.6 }}>
               {mintErrorMessage}
@@ -935,8 +935,8 @@ export default function Home() {
               style={{ 
                 marginTop: 16, 
                 padding: '10px 20px', 
-                background: '#ef4444', 
-                color: 'white', 
+                background: '#60a5fa', 
+                color: '#0f1115', 
                 border: 'none', 
                 borderRadius: '8px', 
                 fontWeight: 700, 
@@ -944,7 +944,7 @@ export default function Home() {
                 fontSize: '14px'
               }}
             >
-              Genindlæs siden
+              Reload
             </button>
           </div>
         </div>
