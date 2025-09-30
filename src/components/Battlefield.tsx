@@ -10,8 +10,6 @@ interface BattlefieldProps {
 
 export default function Battlefield({ pixels, leaderColor }: BattlefieldProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
-  const width = 800
-  const height = 800
 
   const gridSize = useMemo(() => {
     if (!pixels.length) return { w: 50, h: 50 }
@@ -29,9 +27,21 @@ export default function Battlefield({ pixels, leaderColor }: BattlefieldProps) {
   useEffect(() => {
     const canvas = canvasRef.current
     if (!canvas) return
+    
+    // Sæt canvas størrelse til at matche display størrelse
+    const rect = canvas.getBoundingClientRect()
+    const dpr = window.devicePixelRatio || 1
+    canvas.width = rect.width * dpr
+    canvas.height = rect.height * dpr
+    
     const ctx = canvas.getContext('2d')
     if (!ctx) return
-
+    
+    // Skalér context til device pixel ratio for skarphed
+    ctx.scale(dpr, dpr)
+    
+    const width = rect.width
+    const height = rect.height
     const cellW = width / gridSize.w
     const cellH = height / gridSize.h
 
@@ -50,16 +60,14 @@ export default function Battlefield({ pixels, leaderColor }: BattlefieldProps) {
   }, [pixels, gridSize])
 
   const style = leaderColor
-    ? { boxShadow: `rgba(0, 0, 0, 0.3) 0px 12px 24px, rgba(255, 255, 255, 0.05) 0px 0px 0px 1px, ${leaderColor}55 0px 0px 40px, ${leaderColor}55 0px 0px 30px` }
-    : undefined
+    ? { width: '100%', height: '100%', display: 'block', boxShadow: `rgba(0, 0, 0, 0.3) 0px 12px 24px, rgba(255, 255, 255, 0.05) 0px 0px 0px 1px, ${leaderColor}55 0px 0px 40px, ${leaderColor}55 0px 0px 30px` }
+    : { width: '100%', height: '100%', display: 'block' }
 
   return (
     <canvas
       id="battleCanvas"
       ref={canvasRef}
       className="battle-canvas"
-      width={width}
-      height={height}
       style={style}
     />
   )
