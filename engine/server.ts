@@ -48,13 +48,14 @@ function boot() {
           saveWinner({
             round: s.roundId,
             address: winner.address,
-            fees: 0, // Will be updated when we have real fees
-            tx_signature: 'pending', // Will be updated with real tx
+            fees: 0, // Will be updated during claim phase of next round
+            tx_signature: 'pending', // Will be updated during claim phase
             color: winner.color,
             pixels: winner.pixels
           })
           .then(result => {
-            console.log('[Engine] ✅ Winner saved successfully to database:', result)
+            console.log('[Engine] ✅ Winner saved successfully to database (pending payout):', result)
+            console.log('[Engine] 💰 Winner will receive 30% of fees in next round claim phase')
           })
           .catch(err => {
             console.error('[Engine] ❌ Failed to save winner to database:', err)

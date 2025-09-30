@@ -307,15 +307,46 @@ export function startServerFlow(params?: { holders?: Holder[]; claimMs?: number;
   state.phase = 'idle'
   state.running = false
   state.winnerIndex = null
-  const claimMs = typeof params?.claimMs === 'number' ? params!.claimMs : 1000
+  const claimMs = typeof params?.claimMs === 'number' ? params!.claimMs : 20000 // 20s for claim
   const snapshotMs = typeof params?.snapshotMs === 'number' ? params!.snapshotMs : 5000
   const startingMs = typeof params?.startingMs === 'number' ? params!.startingMs : 3000
 
-  // Phase: claim
+  // Phase: claim - automatically claim fees and pay winner
   state.phase = 'claim'
   state.nextPhaseAt = Date.now() + claimMs
   state.feesPoolLamports = 0
   broadcast({ type: 'phase', phase: 'claim', endsAt: state.nextPhaseAt, feesPoolLamports: state.feesPoolLamports })
+  
+  // Trigger claim API to collect fees and pay previous winner
+  ;(async () => {
+    try {
+      console.log('[GameEngine] 🎯 Starting claim process...')
+      const baseUrl = process.env.APP_URL || process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'
+      const claimUrl = `${baseUrl.replace(/\/$/, '')}/api/claim`
+      const response = await fetch(claimUrl, { method: 'POST' })
+      
+      if (response.ok) {
+        const data = await response.json()
+        console.log('[GameEngine] ✅ Claim successful:', {
+          claimedSOL: data.claimedSOL || 0,
+          payoutSOL: data.payoutSOL || 0,
+          winnerAddress: data.winnerAddress || 'none',
+          signature: data.signature || 'none'
+        })
+        // Update fees pool for display
+        if (typeof data.claimedLamports === 'number') {
+          state.feesPoolLamports = data.claimedLamports
+          broadcast({ type: 'phase', phase: 'claim', endsAt: state.nextPhaseAt, feesPoolLamports: state.feesPoolLamports })
+        }
+      } else {
+        const errorText = await response.text().catch(() => 'Unknown error')
+        console.error('[GameEngine] ❌ Claim failed:', response.status, errorText)
+      }
+    } catch (error) {
+      console.error('[GameEngine] ❌ Claim request failed:', error)
+    }
+  })()
+  
   state.phaseTimeout = setTimeout(() => {
     // Phase: snapshot (bestem holders)
     state.phase = 'snapshot'

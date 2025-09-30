@@ -26,7 +26,7 @@ export default function Home() {
   })
 
   const [showWinnerPopup, setShowWinnerPopup] = useState(false)
-  const [winnerInfo, setWinnerInfo] = useState({ address: '', color: '', startingPixels: 0 })
+  const [winnerInfo, setWinnerInfo] = useState({ address: '', color: '', startingPixels: 0, feesSOL: 0 })
   const [nextRoundCountdown, setNextRoundCountdown] = useState(0)
   const [winnerClosing, setWinnerClosing] = useState(false)
   const [showSnapshotPopup, setShowSnapshotPopup] = useState(false)
@@ -134,13 +134,35 @@ export default function Home() {
         const idx = data.winnerIndex
         const winnerHolder = (snapshotHoldersRef.current || [])[idx]
         if (winnerHolder) {
-          setWinnerInfo({ address: winnerHolder.address, color: winnerHolder.color, startingPixels: Math.max(0, Math.floor(winnerHolder.pixels || 0)) })
+          // Fetch winner from database to get payout info
+          ;(async () => {
+            try {
+              const response = await fetch('/api/winners', { cache: 'no-store' })
+              const winnersData = await response.json()
+              const latestWinner = winnersData.winners?.[0]
+              const feesSOL = latestWinner?.fees || 0
+              
+              setWinnerInfo({ 
+                address: winnerHolder.address, 
+                color: winnerHolder.color, 
+                startingPixels: Math.max(0, Math.floor(winnerHolder.pixels || 0)),
+                feesSOL 
+              })
+            } catch {
+              setWinnerInfo({ 
+                address: winnerHolder.address, 
+                color: winnerHolder.color, 
+                startingPixels: Math.max(0, Math.floor(winnerHolder.pixels || 0)),
+                feesSOL: 0
+              })
+            }
+          })()
+          
           setWinnerClosing(false)
           setShowWinnerPopup(true)
           
-          // Winner will be saved to database by server
-          // Frontend will automatically fetch it from database via polling (every 5s)
-          console.log('[Winner] Winner detected, database will be updated by server')
+          // Winner will receive 30% of fees in next round's claim phase
+          console.log('[Winner] Winner detected, will receive payout in next claim phase')
           
           if (!countdownRunningRef.current) {
             countdownRunningRef.current = true
@@ -817,7 +839,27 @@ export default function Home() {
             <div style={{ color: '#9aa1ac', wordBreak: 'break-all', marginBottom: 6, fontSize: 14 }}>
               {winnerInfo.address ? `${winnerInfo.address.substring(0, 6)}...${winnerInfo.address.substring(Math.max(0, winnerInfo.address.length - 4))}` : ''}
             </div>
-            <div style={{ color: '#e5e7eb', marginBottom: 16, fontVariantNumeric: 'tabular-nums', fontSize: 14 }}>Started with {winnerInfo.startingPixels} px</div>
+            <div style={{ color: '#e5e7eb', marginBottom: 4, fontVariantNumeric: 'tabular-nums', fontSize: 14 }}>Started with {winnerInfo.startingPixels} px</div>
+            {winnerInfo.feesSOL > 0 && (
+              <div style={{ 
+                color: '#10b981', 
+                marginBottom: 16, 
+                fontVariantNumeric: 'tabular-nums', 
+                fontSize: 16,
+                fontWeight: 700,
+                background: 'rgba(16, 185, 129, 0.1)',
+                padding: '8px 12px',
+                borderRadius: '6px',
+                border: '1px solid rgba(16, 185, 129, 0.3)'
+              }}>
+                💰 Payout: {winnerInfo.feesSOL.toFixed(6)} SOL
+              </div>
+            )}
+            {winnerInfo.feesSOL === 0 && (
+              <div style={{ color: '#6b7280', marginBottom: 16, fontSize: 13, fontStyle: 'italic' }}>
+                Payout pending claim phase
+              </div>
+            )}
             <div style={{ color: '#e5e7eb', marginBottom: 6, fontSize: 14 }}>Next round starts in</div>
             <div style={{ fontSize: 36, fontWeight: 800, color: '#10b981' }}>{nextRoundCountdown}s</div>
           </div>
