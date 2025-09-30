@@ -53,7 +53,7 @@ let state: EngineState = {
   pixels: [],
   holders: [],
   neighbors: [],
-  fightsPerTick: Math.max(200, Number(process.env.FIGHTS_PER_TICK || 6000)),
+  fightsPerTick: Math.max(200, Number(process.env.FIGHTS_PER_TICK || 15000)),
   rngState: 12345,
   tick: 0,
   interval: null,
@@ -210,7 +210,7 @@ function start(params: { holders: Holder[]; seed?: number; fightsPerTick?: numbe
   state.height = params.height && params.height > 0 ? params.height : 50
   state.totalPixels = state.width * state.height
   state.holders = params.holders || []
-  state.fightsPerTick = params.fightsPerTick && params.fightsPerTick > 0 ? params.fightsPerTick : 6000
+  state.fightsPerTick = params.fightsPerTick && params.fightsPerTick > 0 ? params.fightsPerTick : 15000
   state.rngState = typeof params.seed === 'number' ? params.seed : 12345
   state.neighbors = buildNeighbors(state.width, state.height)
   state.tick = 0
@@ -222,7 +222,7 @@ function start(params: { holders: Holder[]; seed?: number; fightsPerTick?: numbe
   state.nextPhaseAt = 0
   distributePixelsDeterministic()
   state.running = true
-  const tickMs = Math.max(5, Number(process.env.TICK_INTERVAL_MS || 8))
+  const tickMs = Math.max(3, Number(process.env.TICK_INTERVAL_MS || 5))
   state.interval = setInterval(tickOnce, tickMs)
 }
 
@@ -307,9 +307,9 @@ export function startServerFlow(params?: { holders?: Holder[]; claimMs?: number;
   state.phase = 'idle'
   state.running = false
   state.winnerIndex = null
-  const claimMs = typeof params?.claimMs === 'number' ? params!.claimMs : 3000 // 3s for claim
-  const snapshotMs = typeof params?.snapshotMs === 'number' ? params!.snapshotMs : 2000
-  const startingMs = typeof params?.startingMs === 'number' ? params!.startingMs : 2000
+  const claimMs = typeof params?.claimMs === 'number' ? params!.claimMs : 1000 // 1s for claim
+  const snapshotMs = typeof params?.snapshotMs === 'number' ? params!.snapshotMs : 500
+  const startingMs = typeof params?.startingMs === 'number' ? params!.startingMs : 500
 
   // Phase: claim - automatically claim fees and pay winner
   state.phase = 'claim'
@@ -373,7 +373,7 @@ export function startServerFlow(params?: { holders?: Holder[]; claimMs?: number;
       clearPhaseTimeout()
       state.phaseTimeout = setTimeout(() => {
         // Start round (running)
-        start({ holders: state.holders, seed: Date.now() % 100000, fightsPerTick: Math.max(200, Number(process.env.FIGHTS_PER_TICK || 6000)), width: state.width, height: state.height })
+        start({ holders: state.holders, seed: Date.now() % 100000, fightsPerTick: Math.max(200, Number(process.env.FIGHTS_PER_TICK || 15000)), width: state.width, height: state.height })
       }, startingMs)
     }, snapshotMs)
   }, claimMs)
