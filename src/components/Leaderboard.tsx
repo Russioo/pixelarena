@@ -8,7 +8,7 @@ export default function Leaderboard({ holders }: LeaderboardProps) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: '#0f1115', color: '#e5e7eb' }}>
       <div className="leaderboard-header">
-        <div style={{ fontWeight: 800, color: '#e5e7eb', letterSpacing: 0.4, fontSize: 15 }}>Top Holders</div>
+        <div style={{ fontWeight: 800, color: '#e5e7eb', letterSpacing: 0.4, fontSize: 15 }}>Leaderboard</div>
       </div>
 
       <div className="custom-scrollbar leaderboard-scroll">

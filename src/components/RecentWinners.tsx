@@ -10,11 +10,6 @@ export default function RecentWinners({ winners }: RecentWinnersProps) {
   return (
     <div className="recent-winners-container">
       <div className="recent-winners-header">
-        <div className="header-icon">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M12 2L15 8L22 9L17 14L18 21L12 18L6 21L7 14L2 9L9 8L12 2Z" stroke="#fbbf24" strokeWidth="1.5" fill="#fbbf24"/>
-          </svg>
-        </div>
         <div className="header-title">Recent Winners</div>
       </div>
 
@@ -81,15 +76,6 @@ export default function RecentWinners({ winners }: RecentWinnersProps) {
           padding: 14px 18px;
           border-bottom: 1px solid #1f2430;
           background: #0f1115;
-          display: flex;
-          align-items: center;
-          gap: 10px;
-        }
-
-        .header-icon {
-          display: flex;
-          align-items: center;
-          justify-content: center;
         }
 
         .header-title {
