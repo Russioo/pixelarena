@@ -90,6 +90,28 @@ export default function Home() {
           setWinnerInfo({ address: winnerHolder.address, color: winnerHolder.color, startingPixels: Math.max(0, Math.floor(winnerHolder.pixels || 0)) })
           setWinnerClosing(false)
           setShowWinnerPopup(true)
+          
+          // Tilføj winner til recent winners med fake TX (indtil rigtig payout er implementeret)
+          const fakeSignature = Array.from({ length: 88 }, () => 
+            '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz'[Math.floor(Math.random() * 58)]
+          ).join('')
+          
+          const feesInSOL = typeof data.feesPoolLamports === 'number' ? data.feesPoolLamports / 1e9 : 0
+          
+          setGameState(prev => ({
+            ...prev,
+            recentWinners: [
+              {
+                round: prev.currentRound,
+                address: winnerHolder.address,
+                fees: feesInSOL,
+                txSignature: fakeSignature,
+                color: winnerHolder.color
+              },
+              ...prev.recentWinners
+            ].slice(0, 20) // Keep max 20 winners
+          }))
+          
           if (!countdownRunningRef.current) {
             countdownRunningRef.current = true
             const endAt = typeof data.nextRoundAt === 'number' ? data.nextRoundAt : (Date.now() + 10000)

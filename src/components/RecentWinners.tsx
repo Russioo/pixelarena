@@ -10,14 +10,23 @@ export default function RecentWinners({ winners }: RecentWinnersProps) {
   return (
     <div className="recent-winners-container">
       <div className="recent-winners-header">
-        <div className="header-icon">🏆</div>
+        <div className="header-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 2L15 8L22 9L17 14L18 21L12 18L6 21L7 14L2 9L9 8L12 2Z" stroke="#fbbf24" strokeWidth="1.5" fill="#fbbf24"/>
+          </svg>
+        </div>
         <div className="header-title">Recent Winners</div>
       </div>
 
       <div className="winners-scroll">
         {winners.length === 0 ? (
           <div className="no-winners">
-            <div className="no-winners-icon">⏳</div>
+            <div className="no-winners-icon">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="12" cy="12" r="10" stroke="#6b7280" strokeWidth="2"/>
+                <path d="M12 6v6l4 2" stroke="#6b7280" strokeWidth="2" strokeLinecap="round"/>
+              </svg>
+            </div>
             <div className="no-winners-text">No winners yet</div>
           </div>
         ) : (
@@ -78,7 +87,9 @@ export default function RecentWinners({ winners }: RecentWinnersProps) {
         }
 
         .header-icon {
-          font-size: 18px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
         }
 
         .header-title {
@@ -125,7 +136,6 @@ export default function RecentWinners({ winners }: RecentWinnersProps) {
         }
 
         .no-winners-icon {
-          font-size: 32px;
           margin-bottom: 8px;
           opacity: 0.5;
         }
