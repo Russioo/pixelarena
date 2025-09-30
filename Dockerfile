@@ -8,12 +8,14 @@ WORKDIR /app
 # Copy package files
 COPY package.json package-lock.json ./
 
-# Install dependencies
-RUN npm ci --only=production && \
-    npm install express cors ts-node typescript @types/cors @types/express
+# Install ALL dependencies (including dev dependencies for build)
+RUN npm ci
 
 # Copy source code
 COPY . .
+
+# Compile TypeScript to JavaScript
+RUN npx tsc -p tsconfig.docker.json
 
 # Expose port
 EXPOSE 8080
@@ -22,8 +24,8 @@ EXPOSE 8080
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
   CMD curl -f http://localhost:8080/api/round/state || exit 1
 
-# Start game engine
-CMD ["node", "-r", "ts-node/register", "engine/server.ts"]
+# Start game engine (compiled JavaScript)
+CMD ["node", "dist/engine/server.js"]
 
 
 

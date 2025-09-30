@@ -18,3 +18,7 @@ dist
 build
 .vercel
 H/
+.github
+.gitignore
+TEST-SYNC.md
+QUICKSTART.md
