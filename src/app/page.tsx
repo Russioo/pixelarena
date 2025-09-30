@@ -330,34 +330,34 @@ export default function Home() {
 
   function DarkStat({ label, value }: { label: string; value: string }) {
     return (
-      <div style={{ background: '#0f1115', border: '1px solid #1f2430', borderRadius: 12, padding: '10px 14px', minWidth: 140 }}>
-        <div style={{ fontSize: 12, color: '#9aa1ac' }}>{label}</div>
-        <div style={{ fontWeight: 800, color: '#e5e7eb' }}>{value}</div>
+      <div style={{ background: '#0f1115', border: '1px solid #1f2430', borderRadius: 10, padding: '8px 12px', minWidth: 120 }}>
+        <div style={{ fontSize: 11, color: '#6b7280', marginBottom: 2 }}>{label}</div>
+        <div style={{ fontWeight: 700, color: '#e5e7eb', fontSize: 15 }}>{value}</div>
       </div>
     )
   }
 
   return (
     <div style={{ background: '#0b0d12', minHeight: '100vh', color: '#e5e7eb' }}>
-      <div style={{ maxWidth: 1360, margin: '0 auto', padding: 24 }}>
+      <div style={{ maxWidth: 1400, margin: '0 auto', padding: 20 }}>
         {/* Header */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', alignItems: 'center', gap: 16, marginBottom: 16 }}>
-          <div style={{ display: 'flex', gap: 16 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', alignItems: 'center', gap: 20, marginBottom: 20 }}>
+          <div style={{ display: 'flex', gap: 12 }}>
             <DarkStat label="Total Pixels" value={gameState.totalPixels.toString()} />
             <DarkStat label="Active Players" value={liveActivePlayers.toString()} />
             <DarkStat label="Fee Pool" value={`${feePoolSOL.toFixed(4)} SOL`} />
           </div>
-          <div style={{ textAlign: 'center', fontWeight: 800, letterSpacing: 0.4 }}>Pixel Arena</div>
+          <div style={{ textAlign: 'center', fontWeight: 800, fontSize: 18, letterSpacing: 0.5 }}>Pixel Arena</div>
           <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 12 }}>
             <DarkStat label="Round Time" value={roundTimer} />
-            <DarkStat label="Round ID" value={gameState.currentRound.toString()} />
+            <DarkStat label="Round" value={`#${gameState.currentRound}`} />
             <a
               href="https://x.com/pixelarenapump"
               target="_blank"
               rel="noopener noreferrer"
               aria-label="Open X account"
               title="Open X account"
-              style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 36, height: 36, borderRadius: 8, border: '1px solid #1f2430', background: '#0f1115' }}
+              style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 38, height: 38, borderRadius: 10, border: '1px solid #1f2430', background: '#0f1115' }}
             >
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M18.244 2H21L13.5 10.51L22 22h-6.222l-4.86-6.36L5.244 22H2.488l7.94-9.174L2 2h6.333l4.392 5.8L18.244 2Zm-1.066 18h1.934L8.898 4H6.898l10.28 16Z" fill="#e5e7eb"/>
@@ -367,16 +367,29 @@ export default function Home() {
         </div>
 
         {/* Main Grid */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 380px', gap: 16, alignItems: 'start' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 400px', gap: 20, alignItems: 'start' }}>
           {/* Canvas Area */}
-          <div style={{ background: '#0f1115', border: '1px solid #1f2430', borderRadius: 14, padding: 16 }}>
-            <div style={{ aspectRatio: '1 / 1', width: '100%', maxWidth: 900, margin: '0 auto' }}>
+          <div style={{ 
+            background: '#0f1115', 
+            border: '1px solid #1f2430', 
+            borderRadius: 16, 
+            overflow: 'hidden',
+            boxShadow: '0 4px 20px rgba(0,0,0,0.3)'
+          }}>
+            <div style={{ aspectRatio: '1 / 1', width: '100%' }}>
               <Battlefield pixels={gameState.pixels} />
             </div>
           </div>
 
           {/* Leaderboard Area */}
-          <div style={{ background: '#0f1115', border: '1px solid #1f2430', borderRadius: 14, height: 'calc(100vh - 160px)', overflow: 'hidden' }}>
+          <div style={{ 
+            background: '#0f1115', 
+            border: '1px solid #1f2430', 
+            borderRadius: 16, 
+            height: 'calc(100vh - 140px)', 
+            overflow: 'hidden',
+            boxShadow: '0 4px 20px rgba(0,0,0,0.3)'
+          }}>
             <Leaderboard holders={[...liveHolders].sort((a, b) => b.pixels - a.pixels)} />
           </div>
         </div>
