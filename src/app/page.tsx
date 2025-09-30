@@ -191,38 +191,38 @@ export default function Home() {
 
   // On mount: bind til serverens status og SSE
   useEffect(() => {
+    const setupSSE = () => {
+      if (sseRef.current) { try { sseRef.current.close() } catch {} }
+      const sse = new EventSource('/api/stream')
+      
+      sse.onopen = () => {
+        console.log('[SSE] Connected to stream')
+        setShowLoadingPopup(false)
+      }
+      
+      sse.onmessage = (ev) => { 
+        try { 
+          handleServerEvent(JSON.parse(ev.data)) 
+          setShowLoadingPopup(false)
+        } catch (e) {
+          console.error('[SSE] Parse error:', e)
+        }
+      }
+      
+      sse.onerror = (err) => {
+        console.error('[SSE] Connection error:', err)
+        setShowLoadingPopup(false)
+        sse.close()
+      }
+      
+      sseRef.current = sse
+    }
+    
     (async () => {
       try {
         const res = await fetch('/api/round/state', { cache: 'no-store' })
         const s = res.ok ? await res.json() : null
         const running = !!(s && s.running)
-        
-        const setupSSE = () => {
-          if (sseRef.current) { try { sseRef.current.close() } catch {} }
-          const sse = new EventSource('/api/stream')
-          
-          sse.onopen = () => {
-            console.log('[SSE] Connected to stream')
-            setShowLoadingPopup(false)
-          }
-          
-          sse.onmessage = (ev) => { 
-            try { 
-              handleServerEvent(JSON.parse(ev.data)) 
-              setShowLoadingPopup(false)
-            } catch (e) {
-              console.error('[SSE] Parse error:', e)
-            }
-          }
-          
-          sse.onerror = (err) => {
-            console.error('[SSE] Connection error:', err)
-            setShowLoadingPopup(false)
-            sse.close()
-          }
-          
-          sseRef.current = sse
-        }
         
         if (running) {
           // Attach SSE til kørende spil
