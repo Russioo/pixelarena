@@ -114,13 +114,41 @@ export async function POST() {
     const tx = VersionedTransaction.deserialize(buf)
     tx.sign([keypair])
 
-    // Send VersionedTransaction korrekt med sendRawTransaction
+    // Send transaction PRÆCIST som Python script - via ren JSON RPC
     console.log('[Claim] Sender transaction til Solana...')
-    const signature = await connection.sendRawTransaction(tx.serialize(), {
-      skipPreflight: false,
-      preflightCommitment: 'confirmed',
-      maxRetries: 3
+    
+    // Serialize til base64 (præcis som Python)
+    const serializedTx = Buffer.from(tx.serialize()).toString('base64')
+    
+    // JSON RPC request (præcis som Python: SendVersionedTransaction)
+    const sendPayload = {
+      jsonrpc: '2.0',
+      id: 1,
+      method: 'sendTransaction',
+      params: [
+        serializedTx,
+        {
+          encoding: 'base64',
+          preflightCommitment: 'confirmed'
+        }
+      ]
+    }
+    
+    const sendResponse = await axios.post(rpc, sendPayload, {
+      headers: { 'Content-Type': 'application/json' },
+      timeout: 30000
     })
+    
+    // Tjek for fejl (præcis som Python)
+    if (sendResponse.data.error) {
+      console.error('[Claim] Transaction fejl:', JSON.stringify(sendResponse.data.error))
+      throw new Error(`Transaction fejl: ${JSON.stringify(sendResponse.data.error)}`)
+    }
+    
+    const signature = sendResponse.data.result
+    if (!signature) {
+      throw new Error('Ingen transaction signature modtaget')
+    }
     
     console.log('[Claim] SUCCESS! Transaction sendt!')
     console.log('[Claim] Signature:', signature)
