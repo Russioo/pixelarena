@@ -233,7 +233,9 @@ export default function Home() {
   useEffect(() => {
     const setupSSE = () => {
       if (sseRef.current) { try { sseRef.current.close() } catch {} }
-      const sse = new EventSource('/api/stream')
+      const base = process.env.NEXT_PUBLIC_ENGINE_URL
+      const streamUrl = base ? `${base.replace(/\/$/, '')}/api/stream` : '/api/stream'
+      const sse = new EventSource(streamUrl)
       
       sse.onopen = () => {
         console.log('[SSE] Connected to stream')
@@ -260,7 +262,9 @@ export default function Home() {
     
     (async () => {
       try {
-        const res = await fetch('/api/round/state', { cache: 'no-store' })
+        const base = process.env.NEXT_PUBLIC_ENGINE_URL
+        const stateUrl = base ? `${base.replace(/\/$/, '')}/api/round/state` : '/api/round/state'
+        const res = await fetch(stateUrl, { cache: 'no-store' })
         const s = res.ok ? await res.json() : null
         const running = !!(s && s.running)
         

@@ -167,7 +167,8 @@ function tickOnce(): void {
   state.tick++
 
   // Broadcast snapshot (throttled)
-  if (state.tick % 4 === 0) {
+  // Reduce frequency to lower bandwidth usage (every 8 ticks)
+  if (state.tick % 8 === 0) {
     broadcast({ type: 'snapshot', tick: state.tick, startMs: state.startMs, roundId: state.roundId, pixels: state.pixels, holders: state.holders })
   }
 
