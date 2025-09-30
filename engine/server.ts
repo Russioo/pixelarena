@@ -8,22 +8,36 @@ import {
   startServerFlow,
   setOnWinner
 } from '../src/server/gameEngine'
+import { fetchHolders } from './fetchHolders'
 
 const PORT = process.env.PORT ? Number(process.env.PORT) : 8080
 const app = express()
 app.use(cors())
 
+async function startWithRealHolders() {
+  try {
+    const holders = await fetchHolders()
+    console.log(`[Engine] Starting server flow with ${holders.length} holders`)
+    startServerFlow({ holders })
+  } catch (error) {
+    console.error('[Engine] Failed to fetch holders, starting with defaults:', error)
+    startServerFlow()
+  }
+}
+
 function boot() {
   try {
     setOnWinner(() => {
       try {
-        startServerFlow()
+        startWithRealHolders()
       } catch {}
     })
   } catch {}
   try {
     const s = getCurrentState()
-    if (!isRunning() && s.phase === 'idle') startServerFlow()
+    if (!isRunning() && s.phase === 'idle') {
+      startWithRealHolders()
+    }
   } catch {}
 }
 
@@ -50,7 +64,7 @@ app.get('/api/round/state', (_req, res) => {
   }
 })
 
-app.get('/api/round/ensure', (_req, res) => {
+app.get('/api/round/ensure', async (_req, res) => {
   try {
     boot()
     res.json({ ok: true })
@@ -59,14 +73,14 @@ app.get('/api/round/ensure', (_req, res) => {
   }
 })
 
-app.post('/api/round/start', (_req, res) => {
+app.post('/api/round/start', async (_req, res) => {
   try {
     const s = getCurrentState()
     if (s.phase && s.phase !== 'idle') {
       return res.json({ ok: true, alreadyInProgress: true, phase: s.phase })
     }
     if (isRunning()) return res.json({ ok: true, alreadyRunning: true })
-    startServerFlow()
+    await startWithRealHolders()
     res.json({ ok: true, started: true, serverFlow: true })
   } catch (e: any) {
     res.status(500).json({ error: e?.message || 'failed to start round' })
