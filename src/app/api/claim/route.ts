@@ -61,6 +61,23 @@ export async function POST() {
 
     if (!resp.ok) {
       const text = await resp.text().catch(() => '')
+      console.log('[Claim] ⚠️ PumpPortal returnerede fejl (sandsynligvis ingen fees at claime):', resp.status, text)
+      
+      // Hvis der ingen fees er at claime, er det OK - bare returner 0
+      if (text.includes('Insufficient funds') || text.includes('simulation failed')) {
+        console.log('[Claim] Ingen fees at claime - returnerer 0')
+        return NextResponse.json({
+          signature: null,
+          claimedLamports: 0,
+          payoutLamports: 0,
+          claimedSOL: 0,
+          payoutSOL: 0,
+          payoutSignature: null,
+          winnerAddress: null,
+          message: 'No fees to claim yet'
+        })
+      }
+      
       return NextResponse.json({ error: `pumpportal ${resp.status}`, details: text || 'no body' }, { status: 500 })
     }
 
@@ -109,10 +126,38 @@ export async function POST() {
     const winner = await getLatestPendingWinner()
     
     let payoutSignature: string | null = null
+    let actualPayoutSent = 0 // Track faktisk sendte payout
+    
     if (winner && payoutLamports > 0) {
       console.log(`[Claim] Sender ${payoutLamports / 1e9} SOL (30% af ${diffLamports / 1e9} SOL) til vinder: ${winner.address}`)
       
       try {
+        // Tjek at der er nok balance til payout + transaction fee (~0.000005 SOL)
+        const currentBalance = await robustGetBalance(pubkey)
+        const txFeeReserve = 10000 // ~0.00001 SOL reserve til transaction fee
+        const maxPayoutPossible = Math.max(0, currentBalance - txFeeReserve)
+        
+        if (payoutLamports > maxPayoutPossible) {
+          console.log(`[Claim] ⚠️ Ikke nok balance til fuld payout. Balance: ${currentBalance / 1e9} SOL, Ønsket payout: ${payoutLamports / 1e9} SOL`)
+          console.log(`[Claim] Reducerer payout til ${maxPayoutPossible / 1e9} SOL for at dække transaction fee`)
+        }
+        
+        const actualPayoutLamports = Math.min(payoutLamports, maxPayoutPossible)
+        
+        if (actualPayoutLamports <= 0) {
+          console.log(`[Claim] ⚠️ Ikke nok balance til at sende payout (balance: ${currentBalance / 1e9} SOL). Springer payout over.`)
+          return NextResponse.json({
+            signature,
+            claimedLamports: diffLamports,
+            payoutLamports: 0,
+            claimedSOL: diffLamports / 1e9,
+            payoutSOL: 0,
+            payoutSignature: null,
+            winnerAddress: winner?.address || null,
+            message: 'Claim successful but insufficient balance for payout'
+          })
+        }
+        
         // Send 30% af det claimede beløb til vinderen
         const recipientPubkey = new PublicKey(winner.address)
         
@@ -123,7 +168,7 @@ export async function POST() {
         const transferInstruction = SystemProgram.transfer({
           fromPubkey: keypair.publicKey,
           toPubkey: recipientPubkey,
-          lamports: payoutLamports
+          lamports: actualPayoutLamports
         })
         
         // Lav transaction
@@ -144,9 +189,13 @@ export async function POST() {
         await connection.confirmTransaction(payoutSignature, 'confirmed')
         
         console.log(`[Claim] ✅ Payout sendt! Signature: ${payoutSignature}`)
+        console.log(`[Claim] Sendt ${actualPayoutLamports / 1e9} SOL til vinder`)
         
         // Opdater database med fees og tx signature
-        await updateWinnerPayout(winner.id!, payoutLamports / 1e9, payoutSignature)
+        await updateWinnerPayout(winner.id!, actualPayoutLamports / 1e9, payoutSignature)
+        
+        // Track faktisk sendte beløb
+        actualPayoutSent = actualPayoutLamports
         
       } catch (payoutError: any) {
         console.error('[Claim] ❌ Fejl ved payout til vinder:', payoutError)
@@ -163,9 +212,9 @@ export async function POST() {
     return NextResponse.json({
       signature,
       claimedLamports: diffLamports,
-      payoutLamports,
+      payoutLamports: actualPayoutSent,
       claimedSOL: diffLamports / 1e9,
-      payoutSOL: payoutLamports / 1e9,
+      payoutSOL: actualPayoutSent / 1e9,
       payoutSignature,
       winnerAddress: winner?.address || null
     })

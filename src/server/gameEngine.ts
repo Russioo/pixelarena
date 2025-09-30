@@ -323,7 +323,12 @@ export function startServerFlow(params?: { holders?: Holder[]; claimMs?: number;
       console.log('[GameEngine] 🎯 Starting claim process...')
       const baseUrl = process.env.APP_URL || process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'
       const claimUrl = `${baseUrl.replace(/\/$/, '')}/api/claim`
-      const response = await fetch(claimUrl, { method: 'POST' })
+      console.log('[GameEngine] Claim URL:', claimUrl)
+      
+      const response = await fetch(claimUrl, { 
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      })
       
       if (response.ok) {
         const data = await response.json() as any
@@ -331,7 +336,8 @@ export function startServerFlow(params?: { holders?: Holder[]; claimMs?: number;
           claimedSOL: data.claimedSOL || 0,
           payoutSOL: data.payoutSOL || 0,
           winnerAddress: data.winnerAddress || 'none',
-          signature: data.signature || 'none'
+          signature: data.signature || 'none',
+          message: data.message || ''
         })
         // Update fees pool for display
         if (typeof data.claimedLamports === 'number') {
@@ -342,8 +348,10 @@ export function startServerFlow(params?: { holders?: Holder[]; claimMs?: number;
         const errorText = await response.text().catch(() => 'Unknown error')
         console.error('[GameEngine] ❌ Claim failed:', response.status, errorText)
       }
-    } catch (error) {
-      console.error('[GameEngine] ❌ Claim request failed:', error)
+    } catch (error: any) {
+      console.error('[GameEngine] ❌ Claim request failed:', error?.message || error)
+      console.error('[GameEngine] ℹ️ Tjek at APP_URL er sat korrekt i environment variables')
+      console.error('[GameEngine] ℹ️ For Render deployment: APP_URL skal være din Render URL (fx https://pixelarena.onrender.com)')
     }
   })()
   
